@@ -3,6 +3,7 @@ const Transaction = require('../core/transaction');
 const Wallet = require('../client/wallet');
 const express = require('express');
 const { default: axios } = require('axios');
+const cors = require('cors')
 const app = express();
 const port = process.env.PORT || 3001;
 
@@ -10,6 +11,7 @@ const port = process.env.PORT || 3001;
 
 const bytechain = new BlockChain();
 
+app.use(cors({ origin: "http://localhost:4567"}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
