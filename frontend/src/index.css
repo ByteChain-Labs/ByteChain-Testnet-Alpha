@@ -159,6 +159,8 @@ body {
   color: var(--altbase);
   background: var(--primarycolor);
 }
+
+/* wallet */
 .wallet {
   background: linear-gradient(
     to right,
@@ -172,46 +174,83 @@ body {
   align-items: center;
   justify-content: center;
 }
-.wallet .balance {
+.wallet .walletCont {
+  width: 95%;
+  height: 80%;
+  background: #9999993f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+.wallet .walletCont .balance {
   display: flex;
   flex-direction: column;
   align-items: start;
   justify-content: center;
   gap: 1rem;
   color: var(--thickbase);
-  background: #9999993f;
-  border-radius: 10px;
   padding: 1rem;
-  width: 95%;
-  height: 80%;
+  width: 40%;
+  height: 100%;
 }
-.wallet .balance span {
+.wallet .walletCont .balance span {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: bold;
 }
-.wallet .balance span #wallet {
+.wallet .walletCont .balance span #wallet {
   color: var(--thickbase);
   background: none;
   border: none;
   outline: none;
-  font-size: 1rem;
+  font-size: 1.4rem;
   font-weight: bold;
 }
-.wallet .balance span #wallet option {
+.wallet .walletCont .balance span #wallet option {
   background: var(--basecolor);
 }
-.wallet .balance div {
-  display: flex;
-  flex-direction: column;
-  align-items: start;
-  justify-content: center;
-  font-size: 1.8rem;
-  gap: 0.5rem;
-}
-.wallet .balance div p {
-  font-size: 0.8rem;
+.wallet .walletCont .balance div p {
+  font-size: 1.3rem;
   opacity: 0.7;
+}
+.wallet .walletCont .operations {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 60%;
+}
+.wallet .walletCont .operations button {
+  padding: 1rem;
+  border-radius: 15px;
+  border: none;
+  color: var(--altbase);
+  background: var(--basecolor);
+}
+.wallet .walletCont .operations button:hover {
+  transform: scale(1.2);
+}
+
+/* wallet not found  */
+.wallet .walletNotFound {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.wallet .walletNotFound h1 {
+  color: var(--basecolor);
+}
+.wallet .walletNotFound button {
+  padding: 1rem;
+  border-radius: 20px;
+  border: none;
+  color: var(--altbase);
+  background: var(--basecolor);
+}
+.wallet .walletNotFound button:hover {
+  transform: scale(1.4);
 }
