@@ -40,10 +40,6 @@ class BlockChain {
 
     //Creating and Adding a new transaction to the transaction pool
     AddNewTransaction(transaction, pubKey) {
-        if (this.sender === this.blockChainAddress) {
-            this.transactionPool.push(transaction);
-        }
-
         if (!(transaction instanceof Transaction)) {
             throw new TypeError('Invalid transaction format');
         }
