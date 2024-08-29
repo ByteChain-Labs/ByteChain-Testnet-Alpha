@@ -1,5 +1,9 @@
+const Contract = require('../core/contract');
 const Node = require('../core/node');
 const Transaction = require('../core/transaction')
+
+const fs = require('fs');
+const path = require('path')
 
 const express = require('express');
 const app = express();
@@ -50,43 +54,47 @@ app.post('/add-new-transaction', (req, res) => {
 });
 
 app.post('/add-new-contract', (req, res) => {
-    const { contract, publicKey } = req.body;
+    const { fileName, contract, publicKey } = req.body;
 
-    if (!contract || !publicKey) {
+    if (!fileName || !contract || !publicKey) {
         return res.status(400).json({ message: 'Incomplete request data' });
     }
 
-    const parsedContract = JSON.parse(contract);
-    const parsedPublicKey = JSON.parse(publicKey)
-    
-    if (!parsedContract.code || !parsedContract.sender) {
+    if (!contract.code || !contract.fromAddress || !contract.signature) {
         return res.status(400).json({ message: 'Incomplete contract data' });
     }
 
+    const newContract = new Contract(
+        contract.code,
+        contract.fromAddress,
+        contract.signature
+    )
+
+    const dirPath = path.join(__dirname, '../contracts');
+    const filePath = path.join(__dirname, `../contracts/${fileName}.js`);
+    const fileContent = contract.code;
+
+    fs.mkdir(dirPath, {recursive: true}, (err) => {
+        if (err) {
+            return console.error('Error creating directory:', err);
+        }
+    });
+
+    fs.writeFile(filePath, fileContent, (err) => {
+        if (err) {
+            return console.error('Error writing to file:', err);
+        }
+    });
+
     try {
-        node.ExecuteSmartContract(parsedContract, parsedPublicKey);
+        node.AddContract(newContract, publicKey);
         res.status(201).json({ message: 'Contract added successfully' });
     } catch (error) {
         console.error('Error adding contract:', error);
         res.status(500).json({ message: 'Failed to add contract', error: error.message });
     }
-});
 
-
-app.post('/smart-contract', (req, res) => {
-    const { code } = req.body;
-    
-    if (!code) {
-        return res.status(400).json({ message: 'Smart contract code is required' });
-    }
-
-    try {
-        const result = node.ExecuteSmartContract(code);
-        res.status(200).json({ result });
-    } catch (error) {
-        console.error('Error executing smart contract:', error);
-        res.status(500).json({ message: 'Failed to execute smart contract', error: error.message });
-    }
+    node.ExecuteSmartContract(fileName);
 });
 
 app.get('/mine', (req, res) => {
@@ -103,5 +111,3 @@ app.get('/mine', (req, res) => {
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`)
 });
-
-

@@ -1,8 +1,7 @@
 //Importing the block and transaction class
 const Block = require('./block');
 const Transaction = require('./transaction');
-
-
+const Contract = require('./contract')
 
 //BlockChain class
 class BlockChain {
@@ -50,6 +49,19 @@ class BlockChain {
 
         this.transactionPool.push(transaction);
         return transaction;
+    }
+
+    AddNewContract(contract, pubKey) {
+        if (!(contract instanceof Contract)) {
+            throw new TypeError('Invalid contract format');
+        }
+
+        if (!contract.IsValidContract(pubKey)) {
+            throw new Error('Invalid Contract');
+        }
+
+        this.transactionPool.push(contract);
+        return contract;
     }
 
     //Creating a new block

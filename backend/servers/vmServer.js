@@ -1,29 +1,31 @@
-const VM = require('../vm/virtualMachine'); 
+const Contract = require('../core/contract'); 
 
 const express = require('express');
 const { default: axios } = require('axios');
 
 const app = express();
-const port = process.env.PORT || 3010
+const port = process.env.PORT || 3002;
 
-app.post('/create-new-contract', async (req, res) => {
-    const { code, sender, publicKey, privateKey } = req.body;
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-    if (!code || !sender) {
+app.post('/create-contract', async (req, res) => {
+    const { fileName, code, fromAddress, publicKey, privateKey } = req.body;
+
+    if (!fileName || !code || !fromAddress || !privateKey || !publicKey) {
         res.status(400).json({
             message: 'Please provide all required fields'
         })
     }
 
-    const contract = new VM(code, sender);
-    contract.SignContract(privateKey);
+    const signature = Contract.SignContract(code, fromAddress, privateKey)
 
+    const contract = new Contract(code, fromAddress, signature);
 
-    const contReq = { code, publicKey }
+    const contractReq = { fileName, contract, publicKey }
 
     try {
-        const response = await axios.post('http://localhost:3000/add-new-contract', contReq)
-        console.log(`Contract sent sucessfully \n BlockChain server responded with ${response.data}`);
+        await axios.post('http://localhost:3000/add-new-contract', contractReq)
 
         res.status(201).json({ message: 'Contract sent successfully' });
 

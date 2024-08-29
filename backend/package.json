@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start-node": "node ./servers/nodeServer",
-    "start-wallet": "node ./servers/walletServer"
+    "start-wallet": "node ./servers/walletServer",
+    "start-vm": "node ./servers/vmServer"
   },
   "author": "ByteChain Labs",
   "license": "ISC",
@@ -15,6 +16,7 @@
     "cors": "^2.8.5",
     "elliptic": "^6.5.7",
     "express": "^4.19.2",
+    "express-fileupload": "^1.5.1",
     "sha256": "^0.2.0",
     "ws": "^8.18.0"
   }

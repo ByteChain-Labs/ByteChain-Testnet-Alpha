@@ -24,7 +24,7 @@ class Transaction {
             throw new Error('You cannot sign transaction for another wallet.');
         }
     
-        const hashedTransaction = hashTransaction(amount, sender, recipient, privateKey)
+        const hashedTransaction = hashTransaction(amount, sender, recipient)
         const keyFromPrivate = ec.keyFromPrivate(privateKey);
         const sig = keyFromPrivate.sign(hashedTransaction, 'base64');
         const signature = sig.toDER('hex');

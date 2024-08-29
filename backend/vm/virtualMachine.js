@@ -1,39 +1,36 @@
+const fs = require('fs');
+const vm = require('vm');
+const path = require('path')
+ 
  const BlockChain = require('../core/blockchain')
  
  const bytechain = new BlockChain()
  //             TODO TODO TODO
 
 class VirtualMachine {
-    constructor(code, sender) {
+    constructor(filename) {
         this.blockchain = bytechain;
         this.state = {};
-        this.code = code;
-        this.sender = sender;
+        this.filename = filename
     }
 
-    ExecuteContract(code) {
-        if (!code.data) {
-            console.log('No valid contract code found.');
-            return false;
-        }
-
-        try {
-            const context = {
-                state: this.state, 
-                blockchain: this.blockchain,
-                fromAddress: transaction.fromAddress,
-                
-                send: this.Send.bind(this)
-            };
-
-            const func = new Function(context, transaction.data.code);
-            func(context);
-
-            return true;
-        } catch (error) {
-            console.error('Error executing contract:', error);
-            return false;
-        }
+    ExecuteContract() {
+        fs.readFile(path.join(__dirname, `../contracts/${this.filename}.js`), 'utf8', (err, data) => {
+            if (err) {
+                console.error(err);
+                return;
+            }
+            
+            try {
+                const output = eval(data);
+                // console.log(output)
+                this.state = output
+            } catch (err) {
+                console.log(err)
+            }
+        });
     }
 }
 
+
+module.exports = VirtualMachine;

@@ -24,4 +24,11 @@ function hashTransaction(amount, sender, recipient) {
     return hashedTransaction;
 }
 
-module.exports = { hashFunc, hashTransaction };
+function hashContract(code, fromAddress) {
+    const transactionDataAsString = `${code}${fromAddress}`;
+    const hashedContract = hashFunc(transactionDataAsString);
+
+    return hashedContract;
+}
+
+module.exports = { hashFunc, hashTransaction, hashContract };
