@@ -54,9 +54,9 @@ app.post('/add-new-transaction', (req, res) => {
 });
 
 app.post('/add-new-contract', (req, res) => {
-    const { fileName, contract, publicKey } = req.body;
+    const { contract, publicKey } = req.body;
 
-    if (!fileName || !contract || !publicKey) {
+    if (!!contract || !publicKey) {
         return res.status(400).json({ message: 'Incomplete request data' });
     }
 
@@ -70,8 +70,9 @@ app.post('/add-new-contract', (req, res) => {
         contract.signature
     )
 
+    const pathFile = contract.code.tokenSymbol;
     const dirPath = path.join(__dirname, '../contracts');
-    const filePath = path.join(__dirname, `../contracts/${fileName}.js`);
+    const filePath = path.join(__dirname, `../contracts/${pathFile}.js`);
     const fileContent = contract.code;
 
     fs.mkdir(dirPath, {recursive: true}, (err) => {

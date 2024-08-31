@@ -10,9 +10,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.post('/create-contract', async (req, res) => {
-    const { fileName, code, fromAddress, publicKey, privateKey } = req.body;
+    const { code, fromAddress, publicKey, privateKey } = req.body;
 
-    if (!fileName || !code || !fromAddress || !privateKey || !publicKey) {
+    if (!code || !fromAddress || !privateKey || !publicKey) {
         res.status(400).json({
             message: 'Please provide all required fields'
         })
@@ -22,7 +22,7 @@ app.post('/create-contract', async (req, res) => {
 
     const contract = new Contract(code, fromAddress, signature);
 
-    const contractReq = { fileName, contract, publicKey }
+    const contractReq = { contract, publicKey }
 
     try {
         await axios.post('http://localhost:3000/add-new-contract', contractReq)
@@ -30,7 +30,8 @@ app.post('/create-contract', async (req, res) => {
         res.status(201).json({ message: 'Contract sent successfully' });
 
     } catch (error) {
-        res.status(500).json({ message: 'Contract not sent: ', error: error.message });
+        // message: 'Contract not sent: ', error: error.message 
+        res.status(400).json({ message: 'LIUJIOBLUHNOLIUHHHPIOLH'});
     }
 });
 
