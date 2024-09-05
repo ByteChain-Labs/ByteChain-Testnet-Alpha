@@ -1,4 +1,4 @@
-const { hashFunc } = require('../util/util')
+const { hashFunc } = require('./util')
 
 /**
  * Builds a Merkle tree from an array of transactions.

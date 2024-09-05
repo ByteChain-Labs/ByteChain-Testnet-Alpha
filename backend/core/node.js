@@ -1,6 +1,3 @@
-const bootstrapNodes = [];
-const VM = require('../vm/virtualMachine');
-
 const Blockchain = require('./blockchain');
 const Wallet = require('../client/wallet')
 const Transaction = require('./transaction')
@@ -10,6 +7,7 @@ const axios = require('axios');
 const bytechain = new Blockchain()
 const wallet = new Wallet();
 
+const bootstrapNodes = [];
 const MiningReward = 1024;
 
 class Node {
@@ -34,16 +32,6 @@ class Node {
     AddTransaction(transaction, pubKey) {        
         this.blockchain.AddNewTransaction(transaction, pubKey);
         this.BroadCastTransaction(transaction);
-    }
-
-    AddContract(contract, pubKey) { 
-        this.blockchain.AddNewContract(contract, pubKey);
-        this.BroadCastContract(contract);
-    }
-
-    ExecuteSmartContract(filename) {
-        const vm = new VM(filename)
-        vm.ExecuteContract();
     }
 
     Mine() {
@@ -76,14 +64,6 @@ class Node {
         this.peers.forEach(peerUrl => {
             axios.post(`${peerUrl}/transactions`, transaction).catch(error => {
                 console.error(`Error broadcasting transaction to ${peerUrl}:`, error.message);
-            });
-        });
-    }
-
-    BroadCastContract(contract) {
-        this.peers.forEach(peerUrl => {
-            axios.post(`${peerUrl}/contracts`, contract).catch(error => {
-                console.error(`Error broadcasting contract to ${peerUrl}:`, error.message);
             });
         });
     }

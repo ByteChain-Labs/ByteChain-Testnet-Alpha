@@ -1,5 +1,5 @@
 const { hashFunc } = require('../util/util');
-const buildMerkleTree = require('./merkleTree')
+const buildMerkleTree = require('../utils/merkleTree')
 const Transaction = require('./transaction');
 
 const MiningDifficulty = 3;
