@@ -37,8 +37,23 @@ class Node {
     Mine() {
         const MiningRewardTransaction = new Transaction(MiningReward, this.blockchain.blockChainAddress, this.minerAddress);
         this.blockchain.AddNewTransaction(MiningRewardTransaction)
-        this.blockchain.AddNewBlock(); //const newBlock = 
+        const newBlock = this.blockchain.AddNewBlock(); //
+        return newBlock;
+    }
 
+    //Calculating a user's balance and returning it;
+    CalculateBalance(blockChainAddress) {
+        let balance = 0.0000;
+        const block = this.blockchain.chain[0];
+        const transactions =  block.transactions;
+        transactions.forEach(transaction => {
+            if (blockChainAddress === transaction.sender) {
+                balance -= transaction.amount;
+            } else if (blockChainAddress === transaction.recipient) {
+                balance += transaction.amount;
+            }                
+        });
+        return balance.toFixed(4);
     }
 
     async StartMining() {

@@ -50,7 +50,7 @@ app.post('/add-new-transaction', (req, res) => {
     }
 });
 
-setInterval(() => {
+app.get('/mine', (req, res) => {
     try {
         node.Mine();
         res.status(200).json({ message: 'Block mined successfully' });
@@ -58,8 +58,7 @@ setInterval(() => {
         console.error('Error mining block:', error);
         res.status(500).json({ message: 'Failed to mine block', error: error.message });
     }
-}, timer)
-
+})
 
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`)

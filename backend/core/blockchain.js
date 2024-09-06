@@ -1,7 +1,6 @@
 //Importing the block and transaction class
 const Block = require('./block');
 const Transaction = require('./transaction');
-const Contract = require('./contract')
 
 //BlockChain class
 class BlockChain {
@@ -14,8 +13,8 @@ class BlockChain {
 
     //Creating genesis block
     GenesisBlock() { 
-        const GenesisTransactionAmount = 0;
-        const GenesisTransactionRecipient = 'The-ByteChain-BlockChain'; 
+        const GenesisTransactionAmount = 1000000;
+        const GenesisTransactionRecipient = '13sEjuBbarwqyVepXPWYFZd1UJa76BBa1B'; 
         const GenesisBlockPrevHash = '0'.repeat(64)
 
         const genesisTransaction = new Transaction(
@@ -51,19 +50,6 @@ class BlockChain {
         return transaction;
     }
 
-    AddNewContract(contract, pubKey) {
-        if (!(contract instanceof Contract)) {
-            throw new TypeError('Invalid contract format');
-        }
-
-        if (!contract.IsValidContract(pubKey)) {
-            throw new Error('Invalid Contract');
-        }
-
-        this.transactionPool.push(contract);
-        return contract;
-    }
-
     //Creating a new block
     AddNewBlock() {
         const blockHeight = this.chain.length + 1;
@@ -77,26 +63,6 @@ class BlockChain {
         this.chain.push(newBlock);
 
         return newBlock; 
-    }
-
-    //Calculating a user's balance and returning it;
-    CalculateBalance(blockChainAddress) {
-        let balance = 0.00000000;
-        const chain = this.chain;
-        chain.forEach(block => {
-            const transactions =  block.transactions;
-            transactions.forEach(transaction => {
-                const amount = transaction.amount;
-                const sender = transaction.sender;
-                const recipient = transaction.recipient;
-                if (blockChainAddress === sender) {
-                    balance -= amount;
-                } else if (blockChainAddress === recipient) {
-                    balance += amount;
-                }                
-            });
-        });
-        return balance.toFixed(8);
     }
 
     AllTransactionsMade(blockChainAddress) {

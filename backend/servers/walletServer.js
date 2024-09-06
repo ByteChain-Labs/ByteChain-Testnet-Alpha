@@ -1,4 +1,4 @@
-const BlockChain = require('../core/blockchain');
+const Node = require('../core/node');
 const Transaction = require('../core/transaction');
 const Wallet = require('../client/wallet');
 const express = require('express');
@@ -9,7 +9,7 @@ const port = process.env.PORT || 3001;
 
 
 
-const bytechain = new BlockChain();
+const node = new Node();
 
 app.use(cors({ origin: "http://localhost:4567"}))
 app.use(express.json());
@@ -39,7 +39,7 @@ app.post('/check-balance', (req, res) => {
         });
     }
 
-    const balance = bytechain.CalculateBalance(blockchainAddress)
+    const balance = node.CalculateBalance(blockchainAddress)
     res.status(200).json({ message: `Your balance is ${balance}`})
 });
 
