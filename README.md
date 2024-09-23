@@ -5,15 +5,14 @@
 This is the first testnet for ByteChain.
 It is a TypeScript type BlockChain and it uses the Proof of Work consensus mechanism.
 
-#Starting the program
+# Cloning and compiling the program
 **git clone**
 **npm i**
-
 **tsc**
 
-#Starting a node server
+# Starting a node server
 **npm run start-node**
 
-#Starting a wallet server
+# Starting a wallet server
 **npm run start-wallet**
 
