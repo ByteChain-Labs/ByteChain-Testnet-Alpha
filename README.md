@@ -2,7 +2,7 @@
 
 **Explanation**<br>
 This is the first testnet for ByteChain.<br>
-It is a TypeScript type BlockChain and it uses the Proof of Work consensus mechanism.<br>
+It is a TypeScript based BlockChain and it uses the Proof of Work consensus mechanism.<br>
 
 **Cloning the code**<br>
 git clone https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git<br>
