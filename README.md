@@ -1,16 +1,16 @@
 # ByteChain-Testnet-Alpha  
 
-**Explanation**
+**Explanation**<br>
 This is the first testnet for ByteChain.<br>
 It is a TypeScript type BlockChain and it uses the Proof of Work consensus mechanism.<br>
 
-**Cloning the code**
+**Cloning the code**<br>
 git clone https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git<br>
 
-**Installing necessary project dependencies**
+**Installing necessary project dependencies**<br>
 npm i<br>
 
-**Creating the runable js code**
+**Creating the runable js code**<br>
 tsc<br>
 
 **Starting a node server**<br>
