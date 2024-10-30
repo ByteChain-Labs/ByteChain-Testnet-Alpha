@@ -1,0 +1,18 @@
+{
+  "name": "bytechain-testnet-alpha",
+  "version": "1.0.0",
+  "description": "This is the first testnet of the bytechain network",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "BlockChain",
+    "Cryptocurrency",
+    "ByteChain",
+    "Consensus",
+    "Algorithm"
+  ],
+  "author": "ByteChain-Labs",
+  "license": "Apache-2.0"
+}
