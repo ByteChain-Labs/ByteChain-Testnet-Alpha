@@ -8,7 +8,13 @@ class Block {
     transactions: Transaction[];
 
     constructor(blockHeight: number, transactions: Transaction[], prevBlockHash: string) {
-        this.blockHeader = { nonce: 0, blockHeight, timestamp: Date.now(), merkleroot: 'kw;lsdk;l2', prevBlockHash, blockHash: 'ywgiugd'};
+        this.blockHeader = { 
+            nonce: 0, 
+            blockHeight,
+            timestamp: Date.now(), 
+            merkleroot: '', 
+            prevBlockHash, 
+            blockHash: ''};
         this.transactions = transactions;
     }
 
