@@ -14,7 +14,8 @@ class Block {
             timestamp: Date.now(), 
             merkleroot: '', 
             prevBlockHash, 
-            blockHash: ''};
+            blockHash: ''
+        };
         this.transactions = transactions;
     }
 
