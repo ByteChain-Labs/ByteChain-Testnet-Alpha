@@ -1,7 +1,9 @@
 import crypto from 'crypto';
-import { ec as EC } from 'elliptic';
+import { ec as EC, SignatureInput } from 'elliptic';
 import bs58 from 'bs58';
 import Transaction from '../core/transaction';
+import { TransactionType } from '../utils/core_constants';
+import { HashTransaction } from '../utils/crypto';
 
 const ec = new EC('secp256k1');
 
@@ -37,11 +39,23 @@ class Account {
         return blockchainAddress;
     }
 
-    SignTransaction(transaction: Transaction): void {
-        const sign = crypto.createSign('sha256');
-        sign.update(transaction.HashTransaction());
+    SignTransaction(transaction: TransactionType, privKey: Account['privateKey']): Transaction['signature'] {
+        const publicKey = this.CreatePublicKey(privKey);
+        const generatedAddress = this.CreateBlockChainAddress(publicKey);
+
+        if (generatedAddress !== transaction.sender) {
+            throw new Error('You cannot sign transactions for another account.');
+        }
+
+        const { amount, sender, recipient } = transaction;
+        const dataStr = `${amount}${sender}${recipient}`;
+        const hashedTransaction = HashTransaction(dataStr);
+        const sign = crypto.createSign('SHA256');
+        sign.update(hashedTransaction);
         sign.end();
-        transaction.signature = sign.sign(this.privateKey, 'hex');
+        const signature = sign.sign(privKey, 'hex');
+
+        return signature;
     }
 }
 

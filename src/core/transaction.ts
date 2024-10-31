@@ -1,5 +1,6 @@
 import crypto from 'crypto';
-import { TransactionType } from "../utils/core_constants";
+import { TransactionType } from '../utils/core_constants';
+import { HashTransaction } from '../utils/crypto';
 
 class Transaction {
     trxHeader: TransactionType;
@@ -12,16 +13,10 @@ class Transaction {
         this.timestamp = Date.now();
     }
 
-    HashTransaction(): Buffer {
-        const trxDataAsStr = `${this.trxHeader.amount}${this.trxHeader.sender}${this.trxHeader.recipient}${this.timestamp}`;
-        const hash = crypto.createHash('sha256').update(crypto.createHash('sha256').update(trxDataAsStr).digest()).digest();
-
-        return hash;
-    }
-
     VerifyTrxSig(publicKey: string): boolean {
-        const hashedTransaction = this.HashTransaction();
-        const verifier = crypto.createVerify('sha256');
+        const trxDataAsStr: string = `${this.trxHeader.amount}${this.trxHeader.sender}${this.trxHeader.recipient}${this.timestamp}`;
+        const hashedTransaction = HashTransaction(trxDataAsStr);
+        const verifier = crypto.createVerify('SHA256');
         verifier.update(hashedTransaction);
         verifier.end();
 
