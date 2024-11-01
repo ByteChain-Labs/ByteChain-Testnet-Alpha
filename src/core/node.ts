@@ -1,5 +1,7 @@
+import Account from '../accounts/account';
+
 class BCNode {
-    CalculateBalance(): number { return 20; };
+    CalculateBalance(blockchainAddress: Account['blockchainAddress']): number { return 20; };
 }
 
 export default BCNode;

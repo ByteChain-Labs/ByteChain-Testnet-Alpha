@@ -11,7 +11,11 @@ class Wallet {
 
     constructor() {
         this.account = new Account();
-        this.balance = bcnode.CalculateBalance();
+        this.balance = this.WalletCalcBalance();
+    }
+
+    private WalletCalcBalance(): number {
+        return bcnode.CalculateBalance(this.account.blockchainAddress);
     }
 
     CreateTransaction(amount: number, recipient: Account['blockchainAddress']): Transaction {
@@ -28,7 +32,11 @@ class Wallet {
         const signature = this.account.SignTransaction(trxType, this.account.privateKey);
         const transaction = new Transaction(amount, sender, recipient, signature)
 
-        this.balance -= amount;
+        this.balance = this.WalletCalcBalance();
+
         return transaction;
     }
 }
+
+
+export default Wallet;

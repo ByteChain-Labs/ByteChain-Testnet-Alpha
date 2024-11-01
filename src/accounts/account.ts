@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { ec as EC, SignatureInput } from 'elliptic';
+import { ec as EC } from 'elliptic';
 import bs58 from 'bs58';
 import Transaction from '../core/transaction';
 import { TransactionType } from '../utils/core_constants';
@@ -19,14 +19,14 @@ class Account {
     }
 
     // Generates the public key from a private key
-    CreatePublicKey(privKey: string): string {
+    CreatePublicKey(privKey: Account['privateKey']): string {
         const keyPair = ec.keyFromPrivate(privKey);
         const publicKey = keyPair.getPublic('hex');
         return publicKey;
     }
 
     // Creates a blockchain address from the public key
-    CreateBlockChainAddress(publicKey: string): string {
+    CreateBlockChainAddress(publicKey: Account['publicKey']): string {
         const publicKeyBuffer = Buffer.from(publicKey, 'hex');
         const sha256Hash = crypto.createHash('sha256').update(publicKeyBuffer).digest();
         const ripemd160Hash = crypto.createHash('ripemd160').update(sha256Hash).digest();
