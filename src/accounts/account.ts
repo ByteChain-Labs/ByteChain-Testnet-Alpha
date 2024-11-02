@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { ec as EC } from 'elliptic';
-import bs58 from 'bs58';
+import base58 from 'bs58';
 import Transaction from '../core/transaction';
 import { TransactionType } from '../utils/core_constants';
 import { HashTransaction } from '../utils/crypto';
@@ -34,7 +34,7 @@ class Account {
         const payload = Buffer.concat([versionByte, ripemd160Hash]);
         const checksum = crypto.createHash('sha256').update(crypto.createHash('sha256').update(payload).digest()).digest().slice(0, 4);
         const finalPayload = Buffer.concat([payload, checksum]);
-        const blockchainAddress = bs58.encode(finalPayload);
+        const blockchainAddress = base58.encode(finalPayload);
         
         return blockchainAddress;
     }
@@ -50,12 +50,14 @@ class Account {
         const { amount, sender, recipient } = transaction;
         const dataStr = `${amount}${sender}${recipient}`;
         const hashedTransaction = HashTransaction(dataStr);
-        const sign = crypto.createSign('SHA256');
-        sign.update(hashedTransaction);
-        sign.end();
-        const signature = sign.sign(privKey, 'hex');
+        const keyPair = ec.keyFromPrivate(privKey, 'hex')
+        const signature = keyPair.sign(hashedTransaction, 'hex');
+        const r = signature.r.toArrayLike(Buffer, 'be', 32);
+        const s = signature.s.toArrayLike(Buffer, 'be', 32);
+        const compactSignature = Buffer.concat([r, s]);
+        const base58Signature = base58.encode(compactSignature);
 
-        return signature;
+        return base58Signature;
     }
 }
 

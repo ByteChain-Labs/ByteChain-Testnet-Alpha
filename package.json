@@ -4,7 +4,7 @@
   "description": "This is the first testnet of the bytechain network",
   "main": "index.js",
   "scripts": {
-    "test": "node"
+    "test": "node ./build/test"
   },
   "keywords": [
     "BlockChain",

@@ -1,9 +1,9 @@
 import Transaction from "../core/transaction";
-import BCNode from "../core/node";
+// import BCNode from "../core/node";
 import Account from "./account";
 import { TransactionType } from "../utils/core_constants";
 
-const bcnode = new BCNode();
+// const bcnode = new BCNode();
 
 class Wallet {
     account: Account;
@@ -11,12 +11,12 @@ class Wallet {
 
     constructor() {
         this.account = new Account();
-        this.balance = this.WalletCalcBalance();
+        this.balance = 50;//this.WalletCalcBalance();
     }
 
-    private WalletCalcBalance(): number {
-        return bcnode.CalculateBalance(this.account.blockchainAddress);
-    }
+    // private WalletCalcBalance(): number {
+    //     return bcnode.CalculateBalance(this.account.blockchainAddress);
+    // }
 
     CreateTransaction(amount: number, recipient: Account['blockchainAddress']): Transaction {
         const sender = this.account.blockchainAddress;
@@ -32,7 +32,8 @@ class Wallet {
         const signature = this.account.SignTransaction(trxType, this.account.privateKey);
         const transaction = new Transaction(amount, sender, recipient, signature)
 
-        this.balance = this.WalletCalcBalance();
+        this.balance -= amount;
+        recipient += amount;
 
         return transaction;
     }
