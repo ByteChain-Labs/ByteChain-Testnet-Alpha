@@ -1,3 +1,6 @@
+import Transaction from "../core/transaction";
+import Block from "../core/block";
+
 type TransactionType = {
     amount: number,
     sender: string,
@@ -13,4 +16,9 @@ type BlockType = {
     blockHash: string;
 }
 
-export { TransactionType, BlockType };
+type BlockchainMessage = {
+    type: 'newTransaction' | 'newBlock' | 'requestBlockchain' | 'syncBlockchain';
+    payload: Transaction | Block;
+};
+
+export { TransactionType, BlockType, BlockchainMessage };
