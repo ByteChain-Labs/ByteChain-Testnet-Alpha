@@ -1,7 +1,8 @@
 import base58 from 'bs58';
 import { ec as EC } from 'elliptic';
-import { TransactionType } from '../utils/core_constants';
+import { BlockChainAddress, BlockChainPubKey, TransactionType } from '../utils/core_constants';
 import { HashTransaction } from '../utils/crypto';
+import Account from '../accounts/account';
 
 const ec = new EC('secp256k1');
 
@@ -16,7 +17,11 @@ class Transaction {
         this.signature = signature;
     }
 
-    VerifyTrxSig(transaction: Transaction, publicKey: string): boolean {
+    static VerifyTrxSig(transaction: Transaction, publicKey: Account['publicKey']): boolean {
+        if (transaction.trxHeader.sender === BlockChainAddress && publicKey === BlockChainPubKey) {
+            return true;
+        }
+        
         const trxDataAsStr: string = `${transaction.trxHeader.amount}${transaction.trxHeader.sender}${transaction.trxHeader.recipient}${transaction.timestamp}`;
         const base58Signature = transaction.signature
         const compactSignature = base58.decode(base58Signature);
