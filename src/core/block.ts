@@ -11,9 +11,8 @@ const ec = new EC('secp256k1');
 class Block {
     blockHeader: BlockType;
     transactions: Transaction[];
-    nodeSig: string
 
-    constructor(blockHeight: number, transactions: Transaction[], prevBlockHash: string, signature: string) {
+    constructor(blockHeight: number, transactions: Transaction[], prevBlockHash: string) {
         this.blockHeader = { 
             nonce: 0, 
             blockHeight,
@@ -23,9 +22,6 @@ class Block {
             blockHash: ''
         };
         this.transactions = transactions;
-        this.nodeSig = signature;
-
-
     }
 
     SetBlockProps(MiningDifficulty: number): void {
@@ -40,20 +36,6 @@ class Block {
 
     CalculateMerkleRoot(): string {
         return this.transactions.length ? BuildMerkleTree(this.transactions) : '';
-    }
-
-    static VerifyBlockSig(block: Block, publicKey: string): boolean {
-        const trxDataAsStr: string = `${block.blockHeader.blockHash}${block.blockHeader.blockHeight}${block.blockHeader.merkleroot}${block.blockHeader.nonce}${block.blockHeader.prevBlockHash}${block.blockHeader.timestamp}${block.transactions}${block.nodeSig}`;
-        const base58Signature = block.nodeSig
-        const compactSignature = base58.decode(base58Signature);
-
-        const r = compactSignature.slice(0, 32);
-        const s = compactSignature.slice(32, 64);
-        const signature = { r, s };
-        const hashedTransaction = HashBlock(trxDataAsStr);
-        const key = ec.keyFromPublic(publicKey, 'hex');
-        
-        return key.verify(hashedTransaction, signature);
     }
 }
 
