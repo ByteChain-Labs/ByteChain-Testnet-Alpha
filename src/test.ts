@@ -1,9 +1,8 @@
-import BlockChain from "./core/blockchain";
-import Transaction from "./core/transaction";
+import Wallet from "./accounts/wallet";
+import { BlockChainPubKey } from "./utils/core_constants";
 
-const bytechain = new BlockChain();
+const w  = new Wallet();
+const bcpubkey = BlockChainPubKey;
 
-const transaction = bytechain.chain[0].transactions[0];
-console.log(Transaction.VerifyTrxSig(transaction, ''))
 
-console.log()
+console.log(w)
