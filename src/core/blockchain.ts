@@ -1,12 +1,13 @@
 import Block from "./block";
 import Transaction from "./transaction";
-import { BlockChainAddress, BlockChainPubKey, genBlockPrevHash } from "../utils/core_constants";
+import { BlockChainAddress, BlockChainPubKey, BlockTime, genBlockPrevHash } from "../utils/core_constants";
 import Account from "../accounts/account";
 
 class BlockChain {
     chain: Block[];
     trxPool: Transaction[];
     addrBal: Map<string, number>
+    difficulty: number = 5;
 
     constructor() {
         this.chain = [];
@@ -30,7 +31,10 @@ class BlockChain {
     }
 
     AddNewTransaction(transaction: Transaction, publicKey: Account['publicKey']): Transaction {
-        if (publicKey === BlockChainPubKey) return transaction;
+        if (publicKey === BlockChainPubKey) {
+            this.trxPool.push(transaction)
+            return transaction
+        };
 
         const { amount, sender, recipient } = transaction.trxHeader
 
@@ -69,6 +73,49 @@ class BlockChain {
         this.chain.push(newBlock)
         this.trxPool = [];
         return newBlock;
+    }
+
+    GetBalance(address: string): number {
+        return this.addrBal.get(address) || 0;
+    }
+
+    CalculateDifficulty(): void {
+        const lastBlock: Block = this.GetLastBlock();
+        const prevLastBlock: Block = this.chain[this.chain.length - 2];
+        const diffInTime: number = lastBlock.blockHeader.timestamp - prevLastBlock.blockHeader.timestamp;
+        if (this.difficulty < 1) {
+            this.difficulty = 1;
+        }
+        if (this.difficulty > 5) {
+            this.difficulty = 5;
+        }
+        if (diffInTime < BlockTime) {
+            this.difficulty = this.difficulty + 1;
+        } else if (diffInTime > BlockTime) {
+            this.difficulty = this.difficulty - 1;
+        } else {
+            this.difficulty = this.difficulty;
+        }
+    }
+
+    IsChainValid(): boolean {
+        for (let i = 1; i < this.chain.length; i++) {
+            const currentBlock = this.chain[i];
+            const prevBlock = this.chain[i - 1];
+
+            if (!(currentBlock instanceof Block) || !(prevBlock instanceof Block)) {
+                return false;
+            }
+
+            if (!currentBlock.blockHeader.blockHash) {
+                return false;
+            }
+
+            if (currentBlock.blockHeader.prevBlockHash !== prevBlock.blockHeader.blockHash) {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
