@@ -1,6 +1,6 @@
 {
   "name": "bytechain-testnet-alpha",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This is the first testnet of the bytechain network",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,8 @@
     "Cryptocurrency",
     "ByteChain",
     "Consensus",
-    "Algorithm"
+    "Algorithm",
+    "Testnet"
   ],
   "author": "ByteChain-Labs",
   "license": "Apache-2.0",
