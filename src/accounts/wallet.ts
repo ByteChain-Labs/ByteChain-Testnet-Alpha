@@ -1,6 +1,7 @@
 import Transaction from "../core/transaction";
 import BCNode from "../core/node";
 import Account from "./account";
+// import { TCPClient } from "../network/p2p";
 import { TransactionType } from "../utils/core_constants";
 
 const bcnode = new BCNode(5000);
@@ -35,8 +36,12 @@ class Wallet {
         const signature = this.account.SignTransaction(trxType, this.account.privateKey);
         const transaction = new Transaction(amount, sender, recipient, signature)
 
-        this.balance -= amount;
-        recipient += amount;
+
+        // const tcpClient = new TCPClient();
+
+        /* tcpClient
+            create a method on tcp client to allow it to connect to any tcp server(node) and send a transaction through it.
+        */
 
         return transaction;
     }

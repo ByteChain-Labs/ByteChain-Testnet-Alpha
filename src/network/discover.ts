@@ -1,0 +1,4 @@
+/*
+    Create a mechanism to allow tcp servers and clients to discover each other on the bytechain 
+    without using bootstrap nodes
+*/
