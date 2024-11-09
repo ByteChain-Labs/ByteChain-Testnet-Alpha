@@ -8,7 +8,7 @@ Welcome to the **ByteChain Testnet Alpha**! This is the initial test phase for B
 
 ## Key Features of Testnet Alpha
 
-- **Native Token Transfer**: ByteChain Testnet Alpha supports basic transfers of the native token `ByteToken` between accounts.
+- **Native Token Transfer**: ByteChain Testnet Alpha supports basic transfers of the native token `Byte` between accounts.
 - **Initial Testing Environment**: Aimed at developers and testers to familiarize themselves with ByteChain’s underlying technology and test token transfer operations.
 - **Open Source**: All code is open for review, testing, and contributions.
 
@@ -25,11 +25,11 @@ To start using ByteChain Testnet Alpha, follow these steps:
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/bytechain.git
+    git clone https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git
     ```
 2. Navigate to the project directory:
     ```bash
-    cd bytechain
+    cd /ByteChain-Testnet-Alpha
     ```
 3. Install dependencies:
     ```bash
@@ -42,7 +42,7 @@ To start using ByteChain Testnet Alpha, follow these steps:
 
 ### Basic Usage
 
-To transfer `ByteToken` between accounts, use the provided API endpoints or CLI (command-line interface) commands. For example, you can initiate a transfer with the following command (ensure your node is running):
+To transfer `Byte` between accounts, use the provided API endpoints or CLI (command-line interface) commands. For example, you can initiate a transfer with the following command (ensure your node is running):
 
 ```bash
 node transfer.js --from [SenderWalletAddress] --to [RecipientWalletAddress] --amount [Amount]
