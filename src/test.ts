@@ -1,8 +1,6 @@
 import Wallet from "./accounts/wallet";
-import { BlockChainPubKey } from "./utils/core_constants";
+import * as discover from './network/discover'
 
-const w  = new Wallet();
-const bcpubkey = BlockChainPubKey;
+const w = new Wallet();
 
-
-console.log(w)
+console.log(discover.AdvertiseNode(w.account.privateKey));
