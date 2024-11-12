@@ -24,16 +24,25 @@ function VerifyAdvertisement(message: string, signature: string, publicKey: stri
 
 const AdvertiseNode = (privKey: Account['privateKey']) => {
     const broadcaster = dgram.createSocket('udp4');
-    const nodeType = 'ByteChainNode';
-    const networkID = 'bytechain';
 
-    const message = JSON.stringify({ nodeType, networkID });
-    const signature = SignAdvertisement(message, privKey);
+    broadcaster.bind(41234, () => {
+        const info = broadcaster.address();
+        const address = '239.255.255.250'; // Example multicast address for wide network
+        const port = 41234;
+        
+        const nodeType = 'ByteChainNode';
+        const networkID = 'bytechain';
+        const message = JSON.stringify({ nodeType, networkID });
+        const signature = SignAdvertisement(message, privKey);
 
-    const packet = JSON.stringify({ message, signature });
+        const packet = JSON.stringify({ message, signature });
 
-    broadcaster.send(packet, 0, packet.length, 41234, '239.255.255.250'); // Example multicast address for UDP
-    console.log('Advertisement sent.');
+        // Broadcasting packet
+        broadcaster.send(packet, 0, packet.length, port, address, (err) => {
+            if (err) console.error('Failed to broadcast:', err);
+            else console.log('Advertisement sent.');
+        });
+    });
 };
 
 const ListenForNodes = (pubKey: Account['publivKey']) => {
