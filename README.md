@@ -29,7 +29,7 @@ To start using ByteChain Testnet Alpha, follow these steps:
     ```
 2. Navigate to the project directory:
     ```bash
-    cd /ByteChain-Testnet-Alpha
+    cd ByteChain-Testnet-Alpha
     ```
 3. Install dependencies:
     ```bash
@@ -39,10 +39,3 @@ To start using ByteChain Testnet Alpha, follow these steps:
     ```bash
     npm start
     ```
-
-### Basic Usage
-
-To transfer `Byte` between accounts, use the provided API endpoints or CLI (command-line interface) commands. For example, you can initiate a transfer with the following command (ensure your node is running):
-
-```bash
-node transfer.js --from [SenderWalletAddress] --to [RecipientWalletAddress] --amount [Amount]
