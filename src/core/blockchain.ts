@@ -18,7 +18,7 @@ class BlockChain {
 
     GenesisBlock(): void {
         const genTrx: Transaction = new Transaction(1000000000, BlockChainAddress, 'john', '')
-        this.AddNewTransaction(genTrx, BlockChainPubKey);
+        this.AddTransaction(genTrx, BlockChainPubKey);
         const genBlock = new Block(0, [genTrx], genBlockPrevHash)
 
         this.chain.push(genBlock)
@@ -30,7 +30,7 @@ class BlockChain {
         return lastBlock;
     }
 
-    AddNewTransaction(transaction: Transaction, publicKey: Account['publicKey']): Transaction {
+    AddTransaction(transaction: Transaction, publicKey: Account['publicKey']): Transaction {
         if (publicKey === BlockChainPubKey) {
             this.trxPool.push(transaction)
             return transaction
@@ -54,7 +54,7 @@ class BlockChain {
         return transaction;
     }
 
-    AddNewBlock(): Block {
+    AddBlock(): Block {
         const height = this.GetLastBlock().blockHeader.blockHeight + 1;
         const transactions = this.trxPool;
         const previousBlockHash = this.GetLastBlock().blockHeader.blockHash;
