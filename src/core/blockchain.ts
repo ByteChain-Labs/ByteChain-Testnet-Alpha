@@ -38,7 +38,7 @@ class BlockChain {
 
         const { amount, sender, recipient } = transaction.trxHeader
 
-        if (!amount || sender || recipient || !transaction.timestamp || !transaction.signature) {
+        if (!amount || !sender || !recipient || !transaction.timestamp || !transaction.signature) {
             throw new Error('Incomplete transaction detail');
         }
 
