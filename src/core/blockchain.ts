@@ -43,7 +43,7 @@ class BlockChain {
         }
 
         if (!Transaction.VerifyTrxSig(transaction, publicKey)) {
-            throw new Error('Incorrect user public key');
+            throw new Error('Invalid Transaction');
         }
 
         const currBal = this.addrBal.get(recipient) || 0;
