@@ -39,6 +39,7 @@ class Account {
         return blockchainAddress;
     }
 
+    // Allow all accounts to be able to sign transaction
     SignTransaction(transaction: TransactionType, privKey: Account['privateKey']): Transaction['signature'] {
         const publicKey = this.CreatePublicKey(privKey);
         const generatedAddress = this.CreateBlockChainAddress(publicKey);
@@ -57,6 +58,8 @@ class Account {
         const compactSignature = Buffer.concat([r, s]);
         const base58Signature = base58.encode(compactSignature);
 
+        // So the private Key becomes inaccessible after signing
+        privKey = "";
         return base58Signature;
     }
 }
