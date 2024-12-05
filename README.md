@@ -34,7 +34,7 @@ To run ByteChain Testnet Alpha locally, follow these steps:
 3. **Run the Testnet**:
     Start the testnet by running:
     ```bash
-    npm start
+    npm run bcnode
     ```
 
     This will start the blockchain network on your local machine, and you can begin testing basic transactions.
