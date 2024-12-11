@@ -98,24 +98,66 @@ class BlockChain {
         }
     }
 
-    IsChainValid(): boolean {
-        for (let i = 1; i < this.chain.length; i++) {
-            const currentBlock = this.chain[i];
-            const prevBlock = this.chain[i - 1];
+    IsBlockValid(block: Block, prevBlock: Block): boolean { 
+        if (!(block instanceof Block) || !(prevBlock instanceof Block)) {
+            return false;
+        }
 
-            if (!(currentBlock instanceof Block) || !(prevBlock instanceof Block)) {
-                return false;
-            }
+        if (!block.blockHeader.blockHash) {
+            return false;
+        }
 
-            if (!currentBlock.blockHeader.blockHash) {
-                return false;
-            }
+        if (block.blockHeader.prevBlockHash !== prevBlock.blockHeader.blockHash) {
+            return false;
+        }
 
-            if (currentBlock.blockHeader.prevBlockHash !== prevBlock.blockHeader.blockHash) {
-                return false;
-            }
+        const blockHeader = block.blockHeader;
+        const prevBlockHeader = prevBlock.blockHeader;
+
+        if (blockHeader.prevBlockHash != prevBlockHeader.blockHash) { 
+            console.error(`block with id: ${blockHeader.blockHeight} has wrong previous hash`); 
+            return false; 
+        } else if (blockHeader.blockHeight != prevBlockHeader.blockHeight + 1) { 
+            console.error(`block with id: ${blockHeader.blockHeight} is not the next block after the latest: ${prevBlockHeader.blockHeight}`);
+            return false; 
+        }
+
+        return true 
+    }
+
+
+    IsChainValid(chain: [Block]): boolean {
+        for (let i = 1; i < chain.length; i++) {
+            if (i == 0) { 
+                continue; 
+            } 
+            const currentBlock = chain[i];
+            const prevBlock = chain[i - 1];
+
+            this.IsBlockValid(currentBlock, prevBlock);
         }
         return true;
+    }
+
+    ChooseChain(local: [Block], remote: [Block]): [Block] { 
+        let is_local_valid = this.IsChainValid(local); 
+        let is_remote_valid = this.IsChainValid(remote); 
+ 
+        if (is_local_valid && is_remote_valid) { 
+            if (local.length >= remote.length) { 
+                return local 
+            } else { 
+                return remote 
+            } 
+        } else if (is_remote_valid && !is_local_valid) { 
+            return remote 
+        } else if (!is_remote_valid && is_local_valid) { 
+            return local 
+        } else { 
+            console.error("local and remote chains are both invalid"); 
+        } 
+
+        return local;
     }
 }
 

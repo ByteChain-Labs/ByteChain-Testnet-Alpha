@@ -1,6 +1,6 @@
 {
   "name": "bytechain-testnet-alpha",
-  "version": "1.0.1",
+  "version": "0.0.1",
   "description": "This is the first testnet of the bytechain network",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,8 @@
     "@types/elliptic": "^6.4.18",
     "@types/node": "^22.8.4",
     "bs58": "^6.0.0",
-    "elliptic": "^6.6.0"
+    "elliptic": "^6.6.0",
+    "libp2p": "^2.4.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
