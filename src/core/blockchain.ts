@@ -1,6 +1,6 @@
 import Block from "./block";
 import Transaction from "./transaction";
-import { BlockChainAddress, BlockChainPubKey, BlockTime, genBlockPrevHash } from "../utils/core_constants";
+import { BlockChainAddress, BlockChainPubKey, BlockReward, BlockTime, genBlockPrevHash } from "../utils/core_constants";
 import Account from "../accounts/account";
 
 class BlockChain {
@@ -22,6 +22,10 @@ class BlockChain {
         const genBlock = new Block(0, [genTrx], genBlockPrevHash)
 
         this.chain.push(genBlock)
+    }
+
+    GetBalance(address: string): number {
+        return this.addrBal.get(address) || 0;
     }
 
     GetLastBlock(): Block {
@@ -54,7 +58,7 @@ class BlockChain {
         return transaction;
     }
 
-    AddBlock(): Block {
+    AddNewBlock(): Block {
         const height = this.GetLastBlock().blockHeader.blockHeight + 1;
         const transactions = this.trxPool;
         const previousBlockHash = this.GetLastBlock().blockHeader.blockHash;
@@ -70,19 +74,17 @@ class BlockChain {
             this.addrBal.set(recipient, currBal + amount)
         }
 
+        newBlock.SetBlockProps(this.difficulty);
+
         this.chain.push(newBlock)
         this.trxPool = [];
         return newBlock;
     }
 
-    GetBalance(address: string): number {
-        return this.addrBal.get(address) || 0;
-    }
-
     CalculateDifficulty(): void {
-        const lastBlock: Block = this.GetLastBlock();
-        const prevLastBlock: Block = this.chain[this.chain.length - 2];
-        const diffInTime: number = lastBlock.blockHeader.timestamp - prevLastBlock.blockHeader.timestamp;
+        const currBlockHeader: Block['blockHeader'] = this.GetLastBlock().blockHeader;
+        const prevBlockHeader: Block['blockHeader'] = this.chain[this.chain.length - 2].blockHeader;
+        const diffInTime: number = currBlockHeader.timestamp - prevBlockHeader.timestamp;
         if (this.difficulty < 1) {
             this.difficulty = 1;
         }
@@ -96,6 +98,15 @@ class BlockChain {
         } else {
             this.difficulty = this.difficulty;
         }
+    }
+
+    MineBlock(minerAddr: string): Block {
+        const rewardTrx = new Transaction(BlockReward, BlockChainAddress, minerAddr, '');
+        this.AddTransaction(rewardTrx, BlockChainPubKey);
+        const block = this.AddNewBlock();
+        block;
+
+        return block;
     }
 
     IsBlockValid(block: Block, prevBlock: Block): boolean { 
@@ -136,10 +147,11 @@ class BlockChain {
 
             this.IsBlockValid(currentBlock, prevBlock);
         }
+        
         return true;
     }
 
-    ChooseChain(local: [Block], remote: [Block]): [Block] { 
+    SyncChain(local: [Block], remote: [Block]): [Block] { 
         let is_local_valid = this.IsChainValid(local); 
         let is_remote_valid = this.IsChainValid(remote); 
  
