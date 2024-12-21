@@ -3,6 +3,7 @@ import Block from "../core/block";
 
 const BlockChainAddress: string = `${'0'.repeat(24)}BYTECHAIN`
 const BlockChainPubKey: string = `${'0'.repeat(121)}BYTECHAIN`
+const BlockReward: number = 1024;
 const genBlockPrevHash: string = '0'.repeat(32)
 const BlockTime: number = 1500;
 
@@ -30,6 +31,7 @@ export {
     TransactionType, 
     BlockType, 
     BlockchainMessage, 
+    BlockReward,
     BlockChainAddress, 
     genBlockPrevHash, 
     BlockChainPubKey,

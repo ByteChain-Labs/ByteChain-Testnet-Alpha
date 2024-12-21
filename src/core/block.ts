@@ -3,8 +3,7 @@ import Transaction from "./transaction";
 import { BlockType } from "../utils/core_constants";
 import ProofOfWork from '../consensus/pow'
 import BuildMerkleTree from '../utils/merkletree'
-import { HashBlock } from "../utils/crypto";
-import base58 from "bs58";
+
 
 const ec = new EC('secp256k1');
 

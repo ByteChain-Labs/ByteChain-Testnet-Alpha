@@ -3,16 +3,16 @@
     Create TCP Client and Server 
 */
 
-class TCPServer {
+class TcpServer {
     constructor() {
         // Create methods for server
     }
 }
 
-class TCPClient {
+class TcpClient {
     constructor() {
         //Create methods for client
     }
 }
 
-export { TCPClient, TCPServer };
+export { TcpClient, TcpServer };
