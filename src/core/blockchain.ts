@@ -46,6 +46,12 @@ class BlockChain {
             throw new Error('Incomplete transaction detail');
         }
 
+        const currBal = this.addrBal.get(recipient) || 0;
+
+        if (amount > currBal) {
+            throw new Error('Insufficient fund')
+        }
+
         if (!Transaction.VerifyTrxSig(transaction, publicKey)) {
             throw new Error('Invalid Transaction');
         }
