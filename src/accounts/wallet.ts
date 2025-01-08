@@ -1,5 +1,5 @@
 import Transaction from "../core/transaction";
-import BCNode from "../core/node";
+// import Node from "../core/node";
 import Account from "./account";
 // import { TCPClient } from "../network/p2p";
 import { TransactionType } from "../utils/core_constants";
@@ -14,6 +14,10 @@ class Wallet {
     }
 
     // UpdateBalance(): number {
+    /*
+            Add a way for balance calculatuon
+            // this.balance = BCNode.
+    */
     //     const address = this.account.blockchainAddress;
     //     const balance = bcnode.blockchain.GetBalance(address);
 
@@ -26,9 +30,6 @@ class Wallet {
         if (this.balance <= 0 || amount > this.balance) {
             throw new Error('Insufficient fund to complete transaction');
         }
-        // if (amount < 0) {
-        //     throw new Error('Transaction amount cannot be less than zero');
-        // }
 
         const trxType: TransactionType = { amount, sender, recipient };
         const signature = this.account.SignTransaction(trxType, this.account.privateKey);
@@ -41,10 +42,7 @@ class Wallet {
             create a method on tcp client to allow it to connect to any tcp server(node) and send a transaction through it.
         */
 
-        /*
-            Add a way for balance calculatuon
-            // this.balance = BCNode.
-        */
+        
         return transaction;
     }
 }

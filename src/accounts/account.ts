@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import { ec as EC } from 'elliptic';
 import base58 from 'bs58';
 import Transaction from '../core/transaction';
-import { TransactionType } from '../utils/core_constants';
 import { HashTransaction } from '../utils/crypto';
+import { TransactionType } from '../utils/core_constants';
 
 const ec = new EC('secp256k1');
 

@@ -2,11 +2,11 @@ import BlockChain from './blockchain';
 import Wallet from '../accounts/wallet';
 import Transaction from './transaction';
 import Account from '../accounts/account';
-import { SignAdvertisement, VerifyAdvertisement, AdvertiseNode, ListenForNodes } from '../network/discover';
 import { TcpClient, TcpServer } from '../network/p2p';
 import Block from './block';
+import { todo } from 'node:test';
 
-class BCNode {
+class Node {
     blockchain: BlockChain
     isMiner: boolean = false;
     protected wallet: Wallet;
@@ -17,26 +17,28 @@ class BCNode {
     }
 
     Start() {
-        console.log('Your Wallet details \n'.toUpperCase(), this.wallet);
-
-        new TcpClient();
-        new TcpServer();
-        
-        setInterval(() => {
-            AdvertiseNode(this.wallet.account.privateKey)
-            ListenForNodes(this.wallet.account.publicKey)
-        }, 5000)
+        const server = new TcpServer();
+        // server.Start();
     }
 
     AddNewTransaction(transaction: Transaction, publicKey: Account['publicKey']) {
-        this.blockchain.AddTransaction(transaction, publicKey);
+        if (!transaction && !publicKey) {
+            throw new Error('Transaction and public key are required to perform this operation');
+        }
 
+        const { amount, sender, recipient, signature } = transaction;
 
+        if (!amount && !sender && !recipient && !signature) {
+            throw new Error('Invalid transaction provided');
+        }
+
+        const trx = this.blockchain.AddTransaction(transaction, publicKey);
+
+        todo("create a method to broadcast transactions to other nodes");
+        // BroadcastTransaction(trx);
+
+        return trx;
     }
-
-    // SelectMiner(): this {
-
-    // }
 
     MineBlock() {
         if (!this.isMiner) {
@@ -44,11 +46,10 @@ class BCNode {
         }
 
         const block = this.blockchain.MineBlock(this.wallet.account.blockchainAddress);
-        // BroadcastBlock(block);
-    }
 
-    AcceptBlock(block: Block): Block {
-        // VerifyAdvertisement(block, )
+        todo("create a method to broadcast blocks to other nodes");
+        // BroadcastBlock(block);
+
         return block;
     }
 }
@@ -56,4 +57,4 @@ class BCNode {
 
 
 
-export default BCNode;
+export default Node;

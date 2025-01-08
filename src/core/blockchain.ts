@@ -40,7 +40,7 @@ class BlockChain {
             return transaction
         };
 
-        const { amount, sender, recipient } = transaction.trxHeader
+        const { amount, sender, recipient } = transaction;
 
         if (!amount || !sender || !recipient || !transaction.timestamp || !transaction.signature) {
             throw new Error('Incomplete transaction detail');
@@ -67,7 +67,7 @@ class BlockChain {
         const blockTransactions = newBlock.transactions;
 
         for (const transaction of blockTransactions) {
-            const { amount,  recipient } = transaction.trxHeader
+            const { amount,  recipient } = transaction;
 
             const currBal = this.addrBal.get(recipient) || 0;
 
@@ -104,7 +104,6 @@ class BlockChain {
         const rewardTrx = new Transaction(BlockReward, BlockChainAddress, minerAddr, '');
         this.AddTransaction(rewardTrx, BlockChainPubKey);
         const block = this.AddNewBlock();
-        block;
 
         return block;
     }
