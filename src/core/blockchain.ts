@@ -36,8 +36,8 @@ class BlockChain {
 
     AddTransaction(transaction: Transaction, publicKey: Account['publicKey']): Transaction {
         if (publicKey === BlockChainPubKey) {
-            this.trxPool.push(transaction)
-            return transaction
+            this.trxPool.push(transaction);
+            return transaction;
         };
 
         const { amount, sender, recipient } = transaction;
@@ -46,19 +46,23 @@ class BlockChain {
             throw new Error('Incomplete transaction detail');
         }
 
+        const currBal = this.addrBal.get(recipient) || 0;
+
+        if (amount > currBal) {
+            throw new Error('Insufficient fund');
+        }
+
         if (!Transaction.VerifyTrxSig(transaction, publicKey)) {
             throw new Error('Invalid Transaction');
         }
 
-        const currBal = this.addrBal.get(recipient) || 0;
-
-        this.addrBal.set(sender, currBal - amount)
+        this.addrBal.set(sender, currBal - amount);
         
-        this.trxPool.push(transaction)
+        this.trxPool.push(transaction);
         return transaction;
     }
 
-    AddNewBlock(): Block {
+    AddBlock(): Block {
         const height = this.GetLastBlock().blockHeader.blockHeight + 1;
         const transactions = this.trxPool;
         const previousBlockHash = this.GetLastBlock().blockHeader.blockHash;
@@ -103,7 +107,10 @@ class BlockChain {
     MineBlock(minerAddr: string): Block {
         const rewardTrx = new Transaction(BlockReward, BlockChainAddress, minerAddr, '');
         this.AddTransaction(rewardTrx, BlockChainPubKey);
+
         const block = this.AddNewBlock();
+        block;
+
 
         return block;
     }
@@ -125,10 +132,10 @@ class BlockChain {
         const prevBlockHeader = prevBlock.blockHeader;
 
         if (blockHeader.prevBlockHash != prevBlockHeader.blockHash) { 
-            console.error(`block with id: ${blockHeader.blockHeight} has wrong previous hash`); 
+            console.error(`Block with height: ${blockHeader.blockHeight} has wrong previous hash`); 
             return false; 
         } else if (blockHeader.blockHeight != prevBlockHeader.blockHeight + 1) { 
-            console.error(`block with id: ${blockHeader.blockHeight} is not the next block after the latest: ${prevBlockHeader.blockHeight}`);
+            console.error(`Block with height: ${blockHeader.blockHeight} is not the next block after the latest: ${prevBlockHeader.blockHeight}`);
             return false; 
         }
 
