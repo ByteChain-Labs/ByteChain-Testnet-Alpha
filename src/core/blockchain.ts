@@ -62,7 +62,7 @@ class BlockChain {
         return transaction;
     }
 
-    AddBlock(): Block {
+    AddNewBlock(): Block {
         const height = this.GetLastBlock().blockHeader.blockHeight + 1;
         const transactions = this.trxPool;
         const previousBlockHash = this.GetLastBlock().blockHeader.blockHash;
