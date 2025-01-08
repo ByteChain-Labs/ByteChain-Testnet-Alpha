@@ -107,8 +107,10 @@ class BlockChain {
     MineBlock(minerAddr: string): Block {
         const rewardTrx = new Transaction(BlockReward, BlockChainAddress, minerAddr, '');
         this.AddTransaction(rewardTrx, BlockChainPubKey);
-        const block = this.AddBlock();
+
+        const block = this.AddNewBlock();
         block;
+
 
         return block;
     }

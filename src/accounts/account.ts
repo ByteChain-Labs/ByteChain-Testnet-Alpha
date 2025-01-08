@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import { ec as EC } from 'elliptic';
 import base58 from 'bs58';
 import Transaction from '../core/transaction';
-import { TransactionType } from '../utils/core_constants';
 import { HashTransaction } from '../utils/crypto';
+import { TransactionType } from '../utils/core_constants';
 
 const ec = new EC('secp256k1');
 
@@ -58,7 +58,7 @@ class Account {
         const compactSignature = Buffer.concat([r, s]);
         const base58Signature = base58.encode(compactSignature);
 
-        // So the private Key becomes inaccessible after signing
+        // So the private Key becomes inaccessible after signing a transaction
         privKey = "";
         return base58Signature;
     }
