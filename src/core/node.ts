@@ -17,7 +17,7 @@ class BCNode {
     }
 
     Start() {
-        console.log(this.wallet);
+        console.log('Your Wallet details \n'.toUpperCase(), this.wallet);
 
         new TcpClient();
         new TcpServer();

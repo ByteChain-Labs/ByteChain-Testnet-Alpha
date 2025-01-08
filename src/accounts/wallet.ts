@@ -6,11 +6,11 @@ import { TransactionType } from "../utils/core_constants";
 
 class Wallet {
     account: Account;
-    // balance: number;
+    balance: number;
 
     constructor() {
         this.account = new Account();
-        // this.balance = this.UpdateBalance();
+        this.balance = 0;
     }
 
     // UpdateBalance(): number {
@@ -23,9 +23,9 @@ class Wallet {
     CreateTransaction(amount: number, recipient: Account['blockchainAddress']): Transaction {
         const sender = this.account.blockchainAddress;
 
-        // if (this.balance <= 0 || amount > this.balance) {
-        //     throw new Error('Insufficient fund to complete transaction');
-        // }
+        if (this.balance <= 0 || amount > this.balance) {
+            throw new Error('Insufficient fund to complete transaction');
+        }
         // if (amount < 0) {
         //     throw new Error('Transaction amount cannot be less than zero');
         // }
@@ -41,6 +41,10 @@ class Wallet {
             create a method on tcp client to allow it to connect to any tcp server(node) and send a transaction through it.
         */
 
+        /*
+            Add a way for balance calculatuon
+            // this.balance = BCNode.
+        */
         return transaction;
     }
 }

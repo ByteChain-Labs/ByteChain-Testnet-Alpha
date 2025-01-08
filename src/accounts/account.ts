@@ -58,7 +58,7 @@ class Account {
         const compactSignature = Buffer.concat([r, s]);
         const base58Signature = base58.encode(compactSignature);
 
-        // So the private Key becomes inaccessible after signing
+        // So the private Key becomes inaccessible after signing a transaction
         privKey = "";
         return base58Signature;
     }
