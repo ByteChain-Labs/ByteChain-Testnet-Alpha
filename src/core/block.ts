@@ -1,40 +1,34 @@
-import { ec as EC } from 'elliptic';
+import { BlockHeader }  from "../utils/core_constants"
+import proof_of_work from "../consensus/pow";
 import Transaction from "./transaction";
-import { BlockType } from "../utils/core_constants";
-import ProofOfWork from '../consensus/pow'
-import BuildMerkleTree from '../utils/merkletree'
 
-
-const ec = new EC('secp256k1');
 
 class Block {
-    blockHeader: BlockType;
+    block_header: BlockHeader;
     transactions: Transaction[];
 
-    constructor(blockHeight: number, transactions: Transaction[], prevBlockHash: string) {
-        this.blockHeader = { 
-            nonce: 0, 
-            blockHeight,
-            timestamp: Date.now(), 
-            merkleroot: '', 
-            prevBlockHash, 
-            blockHash: ''
+    constructor(block_height: number, timestamp: number, prev_block_hash: string, transactions: Transaction[]) {
+        this.block_header = {
+            nonce: BigInt(0),
+            block_height: block_height,
+            timestamp: timestamp,
+            merkleroot: "",
+            prev_block_hash: prev_block_hash,
+            block_hash: "",
         };
         this.transactions = transactions;
     }
 
-    SetBlockProps(MiningDifficulty: number): void {
-        this.blockHeader.merkleroot = this.CalculateMerkleRoot();
-        const blockDataAsStr = `${this.blockHeader.blockHeight}${this.blockHeader.nonce}${JSON.stringify(this.transactions)}${this.blockHeader.merkleroot}${this.blockHeader.prevBlockHash}`;
-        
-        const { hash, nonce } = ProofOfWork(blockDataAsStr, MiningDifficulty);
-        
-        this.blockHeader.blockHash = hash;
-        this.blockHeader.nonce = nonce;
-    }
+    set_block_props(difficulty: number) {
+        this.block_header.merkleroot = this.calc_merkleroot();
+        const { nonce, block_height, timestamp, merkleroot,  prev_block_hash } = this.block_header;
 
-    CalculateMerkleRoot(): string {
-        return this.transactions.length ? BuildMerkleTree(this.transactions) : '';
+        const block_data_str = `${nonce}${block_height}${timestamp}${merkleroot}${prev_block_hash}`;
+
+        const { n_nonce, hash } = proof_of_work(block_data_str, difficulty);
+
+        this.block_header.nonce = n_nonce;
+        this.block_header.block_hash = hash;
     }
 }
 

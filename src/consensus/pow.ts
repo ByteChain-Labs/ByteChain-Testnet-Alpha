@@ -1,17 +1,19 @@
-import { HashBlock }  from '../utils/crypto';
+import { hash_block } from '../utils/crypto';
 
-function ProofOfWork(blockDataAsString: string, MiningDifficulty: number): { hash: string, nonce: number } {
-    let nonce = 0;
+function proof_of_work(block_data_str: string, mining_difficulty: number): { hash: string, n_nonce: BigInt } {
+    let n_nonce = BigInt(0);
     let hash: string;
+
     while (true) {
-        hash = HashBlock(blockDataAsString + nonce); 
-        if (hash.substring(0, MiningDifficulty) === '0'.repeat(MiningDifficulty)) {
-        break;
+        hash = hash_block(block_data_str + n_nonce.toString()); 
+        if (hash.substring(0, mining_difficulty) === '0'.repeat(mining_difficulty)) {
+            break;
         }
-        nonce++;
+
+        n_nonce++;
     }
-    return { hash, nonce };
+    return { hash, n_nonce };
 }
 
 
-export default ProofOfWork;
+export default proof_of_work;
