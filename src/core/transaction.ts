@@ -1,44 +1,43 @@
-import base58 from 'bs58';
+import { hash_transaction } from "../utils/crypto";
+import base58 from "bs58";
 import { ec as EC } from 'elliptic';
-import { BlockChainAddress, BlockChainPubKey } from '../utils/core_constants';
-import { HashTransaction } from '../utils/crypto';
-import Account from '../accounts/account';
 
 const ec = new EC('secp256k1');
+
 
 class Transaction {
     amount: number;
     sender: string;
     recipient: string;
     signature: string;
-    readonly timestamp: number;
+    comment?: string;
 
-    constructor(amount: number, sender: string, recipient: string, signature: string) {
+    constructor(amount: number, sender: string, recipient: string, signature: string, comment?: string) {
         this.amount = amount;
         this.sender = sender;
         this.recipient = recipient;
-        this.timestamp = Date.now();
         this.signature = signature;
+        this.comment = comment;
     }
 
-    static VerifyTrxSig(transaction: Transaction, publicKey: Account['publicKey']): boolean {
-        if (transaction.sender === BlockChainAddress && publicKey === BlockChainPubKey) {
-            return true;
-        }
+    static verify_tx_sig(transaction: Transaction, publicKey: string): boolean {
+        const { amount, sender, recipient, comment, signature } = transaction;
         
-        const trxDataAsStr: string = `${transaction.amount}${transaction.sender}${transaction.recipient}${transaction.timestamp}`;
-        const base58Signature = transaction.signature
-        const compactSignature = base58.decode(base58Signature);
+        const tx_data_str = comment 
+            ?`${amount}${sender}${recipient}${comment}`
+            :`${amount}${sender}${recipient}`;
+        
+        const base58_sig = signature
+        const compact_sig = base58.decode(base58_sig);
 
-        const r = compactSignature.slice(0, 32);
-        const s = compactSignature.slice(32, 64);
-        const signature = { r, s };
-        const hashedTransaction = HashTransaction(trxDataAsStr);
+        const r = compact_sig.slice(0, 32);
+        const s = compact_sig.slice(32, 64);
+        const tx_signature = { r, s };
+        const hashed_tx = hash_transaction(tx_data_str);
         const key = ec.keyFromPublic(publicKey, 'hex');
         
-        return key.verify(hashedTransaction, signature);
+        return key.verify(hashed_tx, tx_signature);
     }
 }
-
 
 export default Transaction;

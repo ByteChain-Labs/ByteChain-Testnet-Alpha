@@ -1,181 +1,132 @@
-import Block from "./block";
-import Transaction from "./transaction";
-import { BlockChainAddress, BlockChainPubKey, BlockReward, BlockTime, genBlockPrevHash } from "../utils/core_constants";
+import { TxPlaceHolder, BlockReward, BlockTime } from "../utils/core_constants";
 import Account from "../accounts/account";
+import Transaction from "./transaction";
+import Block from "./block";
+
 
 class BlockChain {
+    tx_pool: Transaction[];
     chain: Block[];
-    trxPool: Transaction[];
-    addrBal: Map<string, number>
-    difficulty: number = 5;
+    addr_bal: Map<string, number>;
+    difficulty: number;
 
     constructor() {
+        this.tx_pool = [];
         this.chain = [];
-        this.trxPool = [];
-        this.addrBal = new Map<string, number>();
-        this.GenesisBlock();
+        this.addr_bal = new Map<string, number>();
+        this.difficulty = this.calc_difficulty()
     }
 
-    GenesisBlock(): void {
-        const genTrx: Transaction = new Transaction(1000000000, BlockChainAddress, 'john', '')
-        this.AddTransaction(genTrx, BlockChainPubKey);
-        const genBlock = new Block(0, [genTrx], genBlockPrevHash)
+    get_last_block(): Block {
+        const last_block = this.chain[this.chain.length - 1];
 
-        this.chain.push(genBlock)
+        return last_block;
     }
 
-    GetBalance(address: string): number {
-        return this.addrBal.get(address) || 0;
-    }
+    add_new_tx(transaction: Transaction, pub_key: string): Transaction {
+        const { amount, sender, recipient, signature } = transaction;
 
-    GetLastBlock(): Block {
-        const lastBlock: Block = this.chain[this.chain.length - 1];
-
-        return lastBlock;
-    }
-
-    AddTransaction(transaction: Transaction, publicKey: Account['publicKey']): Transaction {
-        if (publicKey === BlockChainPubKey) {
-            this.trxPool.push(transaction);
-            return transaction;
-        };
-
-        const { amount, sender, recipient } = transaction;
-
-        if (!amount || !sender || !recipient || !transaction.timestamp || !transaction.signature) {
-            throw new Error('Incomplete transaction detail');
+        if (!amount || !sender || !recipient || !signature) {
+            throw new Error("Incomplete transaction detail");
         }
 
-        const currBal = this.addrBal.get(recipient) || 0;
+        const sender_bal = this.addr_bal.get(sender) || 0;
 
-        if (amount > currBal) {
-            throw new Error('Insufficient fund');
+        if(amount < 0) {
+            throw new Error("Invalid amount");
         }
 
-        if (!Transaction.VerifyTrxSig(transaction, publicKey)) {
-            throw new Error('Invalid Transaction');
+        if (amount > sender_bal) {
+            throw new Error("Insufficient fund");
         }
 
-        this.addrBal.set(sender, currBal - amount);
-        
-        this.trxPool.push(transaction);
+        if (!Transaction.verify_tx_sig(transaction, pub_key)) {
+            throw new Error("Invalid Transaction");
+        }
+
+        this.addr_bal.set(sender, sender_bal - amount);
+        this.tx_pool.push(transaction);
+
         return transaction;
     }
 
-    AddNewBlock(): Block {
-        const height = this.GetLastBlock().blockHeader.blockHeight + 1;
-        const transactions = this.trxPool;
-        const previousBlockHash = this.GetLastBlock().blockHeader.blockHash;
-        const newBlock = new Block(height, transactions, previousBlockHash)
+    add_new_block(): Block {
+        const { block_height, block_hash } = this.get_last_block().block_header;
+        const n_block_height = block_height + 1;
+        const transactions = this.tx_pool;
+        const block = new Block(n_block_height, Date.now(), block_hash, transactions);
 
-        const blockTransactions = newBlock.transactions;
-
-        for (const transaction of blockTransactions) {
+        for (const transaction of transactions) {
             const { amount,  recipient } = transaction;
 
-            const currBal = this.addrBal.get(recipient) || 0;
+            const recipient_bal = this.addr_bal.get(recipient) || 0;
 
-            this.addrBal.set(recipient, currBal + amount)
+            this.addr_bal.set(recipient, recipient_bal + amount)
         }
 
-        newBlock.SetBlockProps(this.difficulty);
-
-        this.chain.push(newBlock)
-        this.trxPool = [];
-        return newBlock;
-    }
-
-    CalculateDifficulty(): void {
-        const currBlockHeader: Block['blockHeader'] = this.GetLastBlock().blockHeader;
-        const prevBlockHeader: Block['blockHeader'] = this.chain[this.chain.length - 2].blockHeader;
-        const diffInTime: number = currBlockHeader.timestamp - prevBlockHeader.timestamp;
-        if (this.difficulty < 1) {
-            this.difficulty = 1;
-        }
-        if (this.difficulty > 5) {
-            this.difficulty = 5;
-        }
-        if (diffInTime < BlockTime) {
-            this.difficulty = this.difficulty + 1;
-        } else if (diffInTime > BlockTime) {
-            this.difficulty = this.difficulty - 1;
-        } else {
-            this.difficulty = this.difficulty;
-        }
-    }
-
-    MineBlock(minerAddr: string): Block {
-        const rewardTrx = new Transaction(BlockReward, BlockChainAddress, minerAddr, '');
-        this.AddTransaction(rewardTrx, BlockChainPubKey);
-
-        const block = this.AddNewBlock();
-        block;
-
+        this.tx_pool = [];
 
         return block;
     }
 
-    IsBlockValid(block: Block, prevBlock: Block): boolean { 
-        if (!(block instanceof Block) || !(prevBlock instanceof Block)) {
-            return false;
+    mine_block(miner_addr: string): Block {
+        const account = new Account();
+
+        const { pub_key, priv_key } = account;
+        const comment = "Block Reward by 0xByteChain";
+
+        const reward_placeholder: TxPlaceHolder = { 
+            amount: BlockReward, 
+            sender: pub_key, 
+            recipient: miner_addr,
+            comment: comment
         }
 
-        if (!block.blockHeader.blockHash) {
-            return false;
-        }
+        const reward_tx = new Transaction(
+            BlockReward, 
+            account.blockchain_addr, 
+            miner_addr, 
+            account.sign_tx(reward_placeholder, priv_key),
+            comment
+        );
 
-        if (block.blockHeader.prevBlockHash !== prevBlock.blockHeader.blockHash) {
-            return false;
-        }
+        this.add_new_tx(reward_tx, pub_key);
 
-        const blockHeader = block.blockHeader;
-        const prevBlockHeader = prevBlock.blockHeader;
+        const new_block = this.add_new_block();
+        new_block.set_block_props(this.difficulty);
 
-        if (blockHeader.prevBlockHash != prevBlockHeader.blockHash) { 
-            console.error(`Block with height: ${blockHeader.blockHeight} has wrong previous hash`); 
-            return false; 
-        } else if (blockHeader.blockHeight != prevBlockHeader.blockHeight + 1) { 
-            console.error(`Block with height: ${blockHeader.blockHeight} is not the next block after the latest: ${prevBlockHeader.blockHeight}`);
-            return false; 
-        }
+        this.chain.push(new_block);
+        this.calc_difficulty();
 
-        return true 
+        return new_block; 
     }
 
-
-    IsChainValid(chain: [Block]): boolean {
-        for (let i = 1; i < chain.length; i++) {
-            if (i == 0) { 
-                continue; 
-            } 
-            const currentBlock = chain[i];
-            const prevBlock = chain[i - 1];
-
-            this.IsBlockValid(currentBlock, prevBlock);
+    calc_difficulty(): number {
+        if (this.chain.length < 2) {
+            return this.difficulty;
         }
-        
+
+        const prev_n_block_header = this.chain[this.chain.length - 2].block_header;
+        const n_block_header = this.get_last_block().block_header;
+        const time_diff = n_block_header.timestamp - prev_n_block_header.timestamp;
+
+        if (time_diff < BlockTime) {
+            return this.difficulty += Math.round(time_diff / BlockTime);
+        } else if (time_diff > BlockTime) {
+            return this.difficulty -= Math.round(time_diff / BlockTime);
+        }
+
+        this.difficulty = Math.max(this.difficulty, 1);
+
+        return this.difficulty;
+    }
+
+    is_valid_chain(chain: BlockChain): boolean {
         return true;
     }
 
-    SyncChain(local: [Block], remote: [Block]): [Block] { 
-        let is_local_valid = this.IsChainValid(local); 
-        let is_remote_valid = this.IsChainValid(remote); 
- 
-        if (is_local_valid && is_remote_valid) { 
-            if (local.length >= remote.length) { 
-                return local 
-            } else { 
-                return remote 
-            } 
-        } else if (is_remote_valid && !is_local_valid) { 
-            return remote 
-        } else if (!is_remote_valid && is_local_valid) { 
-            return local 
-        } else { 
-            console.error("local and remote chains are both invalid"); 
-        } 
-
-        return local;
+    sync_chain(local: BlockChain, remote: BlockChain): BlockChain {
+        return remote || local;
     }
 }
 

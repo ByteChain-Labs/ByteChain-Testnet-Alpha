@@ -2,65 +2,66 @@ import crypto from 'crypto';
 import { ec as EC } from 'elliptic';
 import base58 from 'bs58';
 import Transaction from '../core/transaction';
-import { HashTransaction } from '../utils/crypto';
-import { TransactionType } from '../utils/core_constants';
+import { TxPlaceHolder } from '../utils/core_constants';
+import { hash_transaction } from '../utils/crypto';
 
 const ec = new EC('secp256k1');
 
 class Account {
-    privateKey: string;
-    publicKey: string;
-    blockchainAddress: string;
+    priv_key: string;
+    pub_key: string;
+    blockchain_addr: string;
 
     constructor() {
-        this.privateKey = ec.genKeyPair().getPrivate('hex');
-        this.publicKey = this.CreatePublicKey(this.privateKey);
-        this.blockchainAddress = this.CreateBlockChainAddress(this.publicKey);
+        this.priv_key = ec.genKeyPair().getPrivate('hex');
+        this.pub_key = this.create_pub_key(this.priv_key);
+        this.blockchain_addr = this.create_blockchain_addr(this.pub_key);
     }
 
     // Generates the public key from a private key
-    CreatePublicKey(privKey: Account['privateKey']): string {
-        const keyPair = ec.keyFromPrivate(privKey);
-        const publicKey = keyPair.getPublic('hex');
-        return publicKey;
+    create_pub_key(priv_key: string): string {
+        const key_pair = ec.keyFromPrivate(priv_key);
+        const pub_key = key_pair.getPublic('hex');
+        return pub_key;
     }
 
     // Creates a blockchain address from the public key
-    CreateBlockChainAddress(publicKey: Account['publicKey']): string {
-        const publicKeyBuffer = Buffer.from(publicKey, 'hex');
-        const sha256Hash = crypto.createHash('sha256').update(publicKeyBuffer).digest();
-        const ripemd160Hash = crypto.createHash('ripemd160').update(sha256Hash).digest();
-        const versionByte = Buffer.from([0xBC]); // Version byte 
-        const payload = Buffer.concat([versionByte, ripemd160Hash]);
+    create_blockchain_addr(pub_key: string): string {
+        const pub_key_buffer = Buffer.from(pub_key, 'hex');
+        const sha256_hash = crypto.createHash('sha256').update(pub_key_buffer).digest();
+        const ripemd160_hash = crypto.createHash('ripemd160').update(sha256_hash).digest();
+        const version_byte = Buffer.from([0xBC]); // Version byte 
+        const payload = Buffer.concat([version_byte, ripemd160_hash]);
         const checksum = crypto.createHash('sha256').update(crypto.createHash('sha256').update(payload).digest()).digest().slice(0, 4);
-        const finalPayload = Buffer.concat([payload, checksum]);
-        const blockchainAddress = base58.encode(finalPayload);
+        const final_payload = Buffer.concat([payload, checksum]);
+        const blockchain_addr = "0x" + base58.encode(final_payload);
         
-        return blockchainAddress;
+        return blockchain_addr;
     }
 
     // Allow all accounts to be able to sign transaction
-    SignTransaction(transaction: TransactionType, privKey: Account['privateKey']): Transaction['signature'] {
-        const publicKey = this.CreatePublicKey(privKey);
-        const generatedAddress = this.CreateBlockChainAddress(publicKey);
+    sign_tx(transaction: TxPlaceHolder, priv_key: string): Transaction['signature'] {
+        const pub_key = this.create_pub_key(priv_key);
+        const generated_addr = this.create_blockchain_addr(pub_key);
 
-        if (generatedAddress !== transaction.sender) {
+        if (generated_addr !== transaction.sender) {
             throw new Error('You cannot sign transactions for another account.');
         }
 
-        const { amount, sender, recipient } = transaction;
-        const dataStr = `${amount}${sender}${recipient}`;
-        const hashedTransaction = HashTransaction(dataStr);
-        const keyPair = ec.keyFromPrivate(privKey, 'hex')
-        const signature = keyPair.sign(hashedTransaction, 'hex');
+        const { amount, sender, recipient, comment } = transaction;
+        const data_str = `${amount}${sender}${recipient}${comment}`;
+        const hashed_tx = hash_transaction(data_str);
+        const key_pair = ec.keyFromPrivate(priv_key, 'hex')
+        const signature = key_pair.sign(hashed_tx, 'hex');
         const r = signature.r.toArrayLike(Buffer, 'be', 32);
         const s = signature.s.toArrayLike(Buffer, 'be', 32);
-        const compactSignature = Buffer.concat([r, s]);
-        const base58Signature = base58.encode(compactSignature);
+        const compact_sig = Buffer.concat([r, s]);
+        const base58_sig = base58.encode(compact_sig);
 
         // So the private Key becomes inaccessible after signing a transaction
-        privKey = "";
-        return base58Signature;
+        priv_key = "";
+        
+        return base58_sig;
     }
 }
 
