@@ -8,13 +8,19 @@ class BlockChain {
     tx_pool: Transaction[];
     chain: Block[];
     addr_bal: Map<string, number>;
-    difficulty: number;
+    difficulty: number = 3;
 
     constructor() {
         this.tx_pool = [];
         this.chain = [];
         this.addr_bal = new Map<string, number>();
-        this.difficulty = this.calc_difficulty()
+        this.genesis_block();
+    }
+
+    genesis_block() {
+        const transaction: Transaction[] = [];
+        const a_block = new Block(0, Date.now(), "hwjqljsiqwsj", transaction);
+        this.chain.push(a_block)
     }
 
     get_last_block(): Block {
@@ -72,12 +78,14 @@ class BlockChain {
     mine_block(miner_addr: string): Block {
         const account = new Account();
 
-        const { pub_key, priv_key } = account;
+        const { blockchain_addr, pub_key, priv_key } = account;
         const comment = "Block Reward by 0xByteChain";
+
+        this.addr_bal.set(blockchain_addr, 1024);
 
         const reward_placeholder: TxPlaceHolder = { 
             amount: BlockReward, 
-            sender: pub_key, 
+            sender: blockchain_addr, 
             recipient: miner_addr,
             comment: comment
         }
