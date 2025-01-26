@@ -19,6 +19,10 @@ class Block {
         this.transactions = transactions;
     }
 
+    calc_merkleroot(): string {
+        return "calc_merkleroot";
+    }
+
     set_block_props(difficulty: number) {
         this.block_header.merkleroot = this.calc_merkleroot();
         const { nonce, block_height, timestamp, merkleroot,  prev_block_hash } = this.block_header;

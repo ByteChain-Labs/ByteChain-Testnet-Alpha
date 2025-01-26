@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 
 // Take a buffer as input an return a buffer as output
 function hash_func(data: Buffer): Buffer {

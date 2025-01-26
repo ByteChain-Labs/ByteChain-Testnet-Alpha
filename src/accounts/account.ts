@@ -1,7 +1,6 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { ec as EC } from 'elliptic';
 import base58 from 'bs58';
-import Transaction from '../core/transaction';
 import { TxPlaceHolder } from '../utils/core_constants';
 import { hash_transaction } from '../utils/crypto';
 
@@ -40,7 +39,7 @@ class Account {
     }
 
     // Allow all accounts to be able to sign transaction
-    sign_tx(transaction: TxPlaceHolder, priv_key: string): Transaction['signature'] {
+    sign_tx(transaction: TxPlaceHolder, priv_key: string): string {
         const pub_key = this.create_pub_key(priv_key);
         const generated_addr = this.create_blockchain_addr(pub_key);
 
