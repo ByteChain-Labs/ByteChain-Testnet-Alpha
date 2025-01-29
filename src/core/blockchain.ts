@@ -7,8 +7,8 @@ import Block from "./block";
 class BlockChain {
     tx_pool: Transaction[];
     chain: Block[];
-    addr_bal: Map<string, number>;
     difficulty: number = 3;
+    addr_bal: Map<string, number>;
 
     constructor() {
         this.tx_pool = [];
