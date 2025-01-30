@@ -1,6 +1,7 @@
 import { BlockHeader }  from "../utils/core_constants"
 import proof_of_work from "../consensus/pow";
 import Transaction from "./transaction";
+import calc_merkleroot from "./merkleroot";
 
 
 class Block {
@@ -9,7 +10,7 @@ class Block {
 
     constructor(block_height: number, timestamp: number, prev_block_hash: string, transactions: Transaction[]) {
         this.block_header = {
-            nonce: BigInt(0),
+            nonce: 0,
             block_height: block_height,
             timestamp: timestamp,
             merkleroot: "",
@@ -19,15 +20,11 @@ class Block {
         this.transactions = transactions;
     }
 
-    calc_merkleroot(): string {
-        return "calc_merkleroot";
-    }
-
     set_block_props(difficulty: number) {
-        this.block_header.merkleroot = this.calc_merkleroot();
+        this.block_header.merkleroot = calc_merkleroot<Transaction>(this.transactions);
         const { nonce, block_height, timestamp, merkleroot,  prev_block_hash } = this.block_header;
 
-        const block_data_str = `${nonce}${block_height}${timestamp}${merkleroot}${prev_block_hash}`;
+        const block_data_str = `${nonce}${block_height}${timestamp}${merkleroot}${prev_block_hash}${this.transactions}`;
 
         const { n_nonce, hash } = proof_of_work(block_data_str, difficulty);
 

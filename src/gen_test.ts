@@ -35,10 +35,12 @@ const tx1  = new Transaction(
     user1.sign_tx(tx1_ph, user1.priv_key),
     "This is a test tx."
 );
-print(tx1)
-
 
 bc.add_new_tx(tx1, user1.pub_key);
+
+print(tx1)
+print(bc.chain)
+
 bc.mine_block(user2.blockchain_addr);
 
 print("User 1: ", bc.addr_bal.get(user1.blockchain_addr))
@@ -60,11 +62,15 @@ const tx2  = new Transaction(
     user2.sign_tx(tx2_ph, user2.priv_key),
     "This is a test tx."
 );
-print(tx2)
-
 
 bc.add_new_tx(tx2, user2.pub_key);
+
+print(tx2)
+print(bc.chain)
+
 bc.mine_block(user2.blockchain_addr);
 
 print("User 1: ", bc.addr_bal.get(user1.blockchain_addr))
 print("User 2: ", bc.addr_bal.get(user2.blockchain_addr))
+
+print(bc.chain)

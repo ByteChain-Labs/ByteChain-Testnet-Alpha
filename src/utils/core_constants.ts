@@ -9,7 +9,7 @@ type TxPlaceHolder = {
 }
 
 type BlockHeader = {
-    nonce: BigInt,
+    nonce: number,
     block_height: number,
     timestamp: number,
     merkleroot: string,
