@@ -1,9 +1,7 @@
 # Contributing to ByteChain Testnet Alpha
-
 Thank you for your interest in contributing to ByteChain Testnet Alpha! Contributions are welcome and greatly appreciated. By participating, you help improve the project and shape the future of decentralized technology.
 
 ## How to Contribute
-
 1. **Fork the Repository**: Start by forking the repository to your own GitHub account: `git fork https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git`. 
 
 2. **Create a New Branch**: Before making any changes, create a new branch for your work: `git checkout -b my-feature-branch`.
@@ -29,5 +27,6 @@ By contributing, you agree to abide by the [Code of Conduct](https://www.contrib
 - Ensure your contributions align with the roadmap and goals of ByteChain.
 - Open an issue before starting major features to get feedback.
 - Update documentation and add tests as needed when making changes.
+- All contribution will be acknowledged by the maintainer
 
 Thank you for contributing to ByteChain Testnet Alpha!
