@@ -1,4 +1,4 @@
-import { hash_transaction } from "../utils/crypto";
+import { hash_tobuf } from "../utils/crypto";
 import base58 from "bs58";
 import { ec as EC } from 'elliptic';
 
@@ -33,7 +33,7 @@ class Transaction {
         const r = compact_sig.slice(0, 32);
         const s = compact_sig.slice(32, 64);
         const tx_signature = { r, s };
-        const hashed_tx = hash_transaction(tx_data_str);
+        const hashed_tx = hash_tobuf(tx_data_str);
         const key = ec.keyFromPublic(publicKey, 'hex');
         
         return key.verify(hashed_tx, tx_signature);

@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { ec as EC } from 'elliptic';
 import base58 from 'bs58';
 import { TxPlaceHolder } from '../utils/core_constants';
-import { hash_transaction } from '../utils/crypto';
+import { hash_tobuf } from '../utils/crypto';
 
 const ec = new EC('secp256k1');
 
@@ -49,7 +49,7 @@ class Account {
 
         const { amount, sender, recipient, comment } = transaction;
         const data_str = `${amount}${sender}${recipient}${comment}`;
-        const hashed_tx = hash_transaction(data_str);
+        const hashed_tx = hash_tobuf(data_str);
         const key_pair = ec.keyFromPrivate(priv_key, 'hex')
         const signature = key_pair.sign(hashed_tx, 'hex');
         const r = signature.r.toArrayLike(Buffer, 'be', 32);

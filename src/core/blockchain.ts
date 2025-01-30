@@ -1,3 +1,4 @@
+import calc_merkleroot from "./merkleroot";
 import { TxPlaceHolder, BlockReward, BlockTime } from "../utils/core_constants";
 import Account from "../accounts/account";
 import Transaction from "./transaction";
@@ -19,7 +20,14 @@ class BlockChain {
 
     genesis_block() {
         const transaction: Transaction[] = [];
-        const a_block = new Block(0, Date.now(), "hwjqljsiqwsj", transaction);
+        const a_block = new Block(
+            0,
+            Date.now(),
+            "0x00000000000000000000000000000000ByteChain",
+            transaction
+        );
+        
+        a_block.block_header.block_hash = "0x00000000000000000000000000000001ByteChain"
         this.chain.push(a_block)
     }
 
@@ -104,14 +112,14 @@ class BlockChain {
         new_block.set_block_props(this.difficulty);
 
         this.chain.push(new_block);
-        this.calc_difficulty();
+        this.difficulty = this.calc_difficulty();
 
         return new_block; 
     }
 
     calc_difficulty(): number {
         if (this.chain.length < 2) {
-            return this.difficulty;
+            return this.difficulty + 1;
         }
 
         const prev_n_block_header = this.chain[this.chain.length - 2].block_header;
