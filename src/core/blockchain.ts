@@ -102,7 +102,7 @@ class BlockChain {
             BlockReward, 
             account.blockchain_addr, 
             miner_addr, 
-            account.sign_tx(reward_placeholder, priv_key),
+            Account.sign_tx(reward_placeholder, priv_key),
             comment
         );
 
@@ -112,7 +112,7 @@ class BlockChain {
         new_block.set_block_props(this.difficulty);
 
         this.chain.push(new_block);
-        this.difficulty = this.calc_difficulty();
+        this.calc_difficulty();
 
         return new_block; 
     }
@@ -137,7 +137,10 @@ class BlockChain {
         return this.difficulty;
     }
 
-    is_valid_chain(chain: BlockChain): boolean {
+    is_valid_chain(chain: BlockChain['chain']): boolean {
+        for (const block in chain) {
+            return true;
+        }
         return true;
     }
 

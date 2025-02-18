@@ -31,6 +31,20 @@ class Block {
         this.block_header.nonce = n_nonce;
         this.block_header.block_hash = hash;
     }
+
+    contain_valid_tx() {
+        for (const tx of this.transactions) {
+            if (!tx) {
+                throw new Error("Block does not contain any tx.")
+            }
+
+            if (!tx.is_valid_tx()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 
