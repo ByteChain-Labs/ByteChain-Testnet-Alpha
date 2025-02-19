@@ -17,5 +17,9 @@ type BlockHeader = {
     block_hash: string
 }
 
+const print = (...data: any): void => {
+    console.log(...data);
+}
 
-export { BlockTime, TxPlaceHolder, BlockReward, BlockHeader };
+
+export { BlockTime, TxPlaceHolder, BlockReward, BlockHeader, print };

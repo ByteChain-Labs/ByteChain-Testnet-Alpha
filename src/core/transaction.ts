@@ -38,6 +38,10 @@ class Transaction {
         
         return key.verify(hashed_tx, tx_signature);
     }
+
+    is_valid_tx(): boolean {
+        return true;
+    }
 }
 
 export default Transaction;

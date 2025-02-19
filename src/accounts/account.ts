@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import crypto from 'crypto';
 import { ec as EC } from 'elliptic';
 import base58 from 'bs58';
 import { TxPlaceHolder } from '../utils/core_constants';
@@ -13,19 +13,19 @@ class Account {
 
     constructor() {
         this.priv_key = ec.genKeyPair().getPrivate('hex');
-        this.pub_key = this.create_pub_key(this.priv_key);
-        this.blockchain_addr = this.create_blockchain_addr(this.pub_key);
+        this.pub_key = Account.create_pub_key(this.priv_key);
+        this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
     }
 
     // Generates the public key from a private key
-    create_pub_key(priv_key: string): string {
+    static create_pub_key(priv_key: string): string {
         const key_pair = ec.keyFromPrivate(priv_key);
         const pub_key = key_pair.getPublic('hex');
         return pub_key;
     }
 
     // Creates a blockchain address from the public key
-    create_blockchain_addr(pub_key: string): string {
+    static create_blockchain_addr(pub_key: string): string {
         const pub_key_buffer = Buffer.from(pub_key, 'hex');
         const sha256_hash = crypto.createHash('sha256').update(pub_key_buffer).digest();
         const ripemd160_hash = crypto.createHash('ripemd160').update(sha256_hash).digest();
@@ -39,9 +39,9 @@ class Account {
     }
 
     // Allow all accounts to be able to sign transaction
-    sign_tx(transaction: TxPlaceHolder, priv_key: string): string {
-        const pub_key = this.create_pub_key(priv_key);
-        const generated_addr = this.create_blockchain_addr(pub_key);
+    static sign_tx(transaction: TxPlaceHolder, priv_key: string): string {
+        const pub_key = Account.create_pub_key(priv_key);
+        const generated_addr = Account.create_blockchain_addr(pub_key);
 
         if (generated_addr !== transaction.sender) {
             throw new Error('You cannot sign transactions for another account.');
