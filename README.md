@@ -8,7 +8,7 @@ ByteChain is a decentralized blockchain project designed to provide a robust fra
 ## Features of ByteChain Testnet Alpha
 - **Basic Blockchain Transactions**: Testnet Alpha focuses on sending and receiving transactions on a decentralized network.
 - **Transaction Pool**: Transactions are first added to a pool, where miners will select them to mine into blocks.
-- **Proof-of-Work**: Transactions are validated using the Proof-of-Work consensus mechanism, ensuring network security and preventing double-spending.
+- **Proof-of-Work**: Transactions are validated using the Proof-of-Work consensus mechanism, ensuring network security.
 - **Unique Balance Calculation**: Balance are calculated not in the traditional Account or UTXO model. ByteChain calculates user balance in this fashion, if a user sends byte(The native coin for the ByteChain network) (his/her/don't know) balances is immediately reduced by the amount sent but the person that is supposed to receive the coins don't receive them immediately until the transaction is mined and added to a block onchain. This is good because users can make many transactions if their balance is enough to cover for it instead of them waiting for a transaction to be finalized before they can do another transaction but this also prevents them from spending the same token they sent by reducing their balance immediately a transaction occurs.
 
 
@@ -38,7 +38,7 @@ To run ByteChain Testnet Alpha locally, follow these steps:
 
     This will start the blockchain network on your local machine, and you can begin testing basic transactions.
 
-## Usage
+## Usage (Under Development)
 - **Sending Transactions**: Use the provided API or local interface to send transactions. The transactions will first be added to the transaction pool before being mined by a node.(still in development)
 - **Mining**: Nodes in the network will mine blocks containing valid transactions.
 
