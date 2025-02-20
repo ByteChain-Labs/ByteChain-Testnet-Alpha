@@ -1,14 +1,6 @@
-import BlockChain from "./core/blockchain";
+import Account from "./accounts/account";
 import { print } from "./utils/core_constants";
 
-const bytechain = new BlockChain();
+const account = new Account();
 
-bytechain.mine_block("abc");
-bytechain.mine_block("abc");
-bytechain.mine_block("abc");
-bytechain.mine_block("abc");
-bytechain.mine_block("abc");
-
-
-print(bytechain.chain);
-print(bytechain.addr_bal.get("abc"))
+print(account);
