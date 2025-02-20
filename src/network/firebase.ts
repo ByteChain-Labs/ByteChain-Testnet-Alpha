@@ -2,12 +2,15 @@ import { initializeApp } from "firebase/app";
 import {
   addDoc,
   collection,
+  DocumentData,
   getDocs,
   getFirestore,
   query,
   where,
 } from "firebase/firestore";
 import { promises as fs } from "fs";
+import { writeFile } from "fs/promises";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyBSxYlyxAw_li09nCZmjuc3eCOlboKqc5U",
@@ -87,8 +90,55 @@ export async function loginNodeFromSetupFile(filePath: string): Promise<void> {
   }
 }
 
-loginNodeFromSetupFile("../../bcnode-setup.txt")
-  .then(() => console.log("Login process complete."))
-  .catch((error) =>
-    console.error("Login process encountered an error:", error)
-  );
+
+
+/**
+ * @param filePath - The filepath for peers.txt
+ */
+async function writePeersToFile(filePath: string, content: string): Promise<void> {
+  try {
+      await writeFile(filePath, content, "utf-8");
+      console.log("Peers written to file successfully")
+  } catch (error) {
+      console.error("Error writing peers to file: ", error);
+  }
+}
+
+
+/*
+  Todo make sure that the node does not add itself as a peer in peers.txt
+  and also make sure that if an error occurs during login no peer should
+  be written inside peers.txt
+*/
+async function getRandomPeers(filePath: string): Promise<void> {
+  const nodesRef = collection(db, "nodes");
+  
+  try {
+    const snapshot = await getDocs(nodesRef);
+    const nodes = snapshot.docs.map(doc => doc.data());
+
+    if (nodes.length === 0) {
+      console.log("No peer found.");
+    }
+
+    const randomNodes = nodes
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 8);
+
+    const randomNodesStr = JSON.stringify(randomNodes, null, 2);
+    
+    await writePeersToFile(filePath, randomNodesStr);
+
+    console.log("Peers fetched successfully.");
+  } catch (error) {
+    console.error("Error fetching peers: ", error);
+  }
+}
+
+
+
+
+loginNodeFromSetupFile("./bcnode-setup.txt")
+    .then(() => getRandomPeers("./peers.txt"))
+    .then(() => console.log("Login process complete."))
+    .catch((error) => console.error("Login process encountered an error:", error));

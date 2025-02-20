@@ -22,9 +22,11 @@
     "@types/bs58": "^4.0.4",
     "@types/elliptic": "^6.4.18",
     "@types/node": "^22.10.7",
+    "@types/ws": "^8.5.14",
     "bs58": "^6.0.0",
     "elliptic": "^6.6.0",
-    "firebase": "^11.3.1"
+    "firebase": "^11.3.1",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3"
