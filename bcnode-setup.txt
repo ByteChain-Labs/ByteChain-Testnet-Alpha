@@ -1,2 +1,2 @@
-PublicKey: ,
+PublicKey: 
 BlockchainAddress: 
