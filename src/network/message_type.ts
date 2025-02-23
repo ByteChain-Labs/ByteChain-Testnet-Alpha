@@ -8,26 +8,31 @@ type BaseMessage = {
     node_sig: string
 };
 
-type Message<T> = {
-    payload: T,
-    base_msg: BaseMessage
-};
-
-type TransactionMessage = Message<Transaction>;
-type BlockMessage = Message<Block>;
-type ChainMessage = Message<BlockChain>;
-
 enum MessageType {
     TransactionMessage = "TRANSACTION",
     BlockMessage = "BLOCK",
     ChainMessage = "CHAIN"
 };
 
-type MessageMapping = {
-    [MessageType.TransactionMessage]: TransactionMessage;
-    [MessageType.BlockMessage]: BlockMessage;
-    [MessageType.ChainMessage]: ChainMessage;
-};
+type TransactionMessage = {
+    type: MessageType.TransactionMessage;
+    payload: Transaction;
+    base_msg: BaseMessage
+}
+
+type BlockMessage = {
+    type: MessageType.BlockMessage;
+    payload: Block;
+    base_msg: BaseMessage
+}
+
+type ChainMessage = {
+    type: MessageType.ChainMessage;
+    payload: BlockChain;
+    base_msg: BaseMessage
+}
+
+type Message = TransactionMessage | BlockMessage | ChainMessage;
 
 
-export { MessageType, MessageMapping };
+export { Message, MessageType };
