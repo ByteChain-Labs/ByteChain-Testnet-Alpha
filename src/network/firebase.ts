@@ -31,7 +31,7 @@ export { app, db };
  *  @param filePath - The path to the bcnode setup.txt file.
  */
 
-export async function loginNodeFromSetupFile(filePath: string): Promise<void> {
+export async function loginNodeFromSetupFile(filePath: string): Promise<string> {
   try {
     const content = await fs.readFile(filePath, "utf-8");
     const lines = content.split("\n");
@@ -58,7 +58,7 @@ export async function loginNodeFromSetupFile(filePath: string): Promise<void> {
       console.error(
         "Public key or blockchain address missing in the setup file."
       );
-      return;
+      throw new Error("Missing public key or blockchain address")
     }
 
     // checks if node is registered
@@ -73,7 +73,7 @@ export async function loginNodeFromSetupFile(filePath: string): Promise<void> {
     if (!querySnapshot.empty) {
       console.log("Node already registered. Logging in...");
       // Additional login tasks to be added here
-      return;
+      return blockchainAddress;
     }
 
     // If not register.
@@ -85,8 +85,10 @@ export async function loginNodeFromSetupFile(filePath: string): Promise<void> {
     const docRef = await addDoc(nodesRef, newNode);
 
     console.log("Node registered successfully with ID:", docRef.id);
+    return blockchainAddress
   } catch (error) {
     console.error("Error logging in node from setup file:", error);
+    throw error
   }
 }
 
@@ -110,7 +112,7 @@ async function writePeersToFile(filePath: string, content: string): Promise<void
   and also make sure that if an error occurs during login no peer should
   be written inside peers.txt
 */
-async function getRandomPeers(filePath: string): Promise<void> {
+async function getRandomPeers(filePath: string, blockchainAddress: string): Promise<void> {
   const nodesRef = collection(db, "nodes");
   
   try {
@@ -119,9 +121,17 @@ async function getRandomPeers(filePath: string): Promise<void> {
 
     if (nodes.length === 0) {
       console.log("No peer found.");
+      return
     }
 
-    const randomNodes = nodes
+    const filteredNodes = nodes.filter(node => node.blockchainAddress !== blockchainAddress);
+
+    if (filteredNodes.length === 0) {
+      console.log("No peer found after filtering out self.");
+      return
+    }
+
+    const randomNodes = filteredNodes
       .sort(() => Math.random() - 0.5)
       .slice(0, 8);
 
@@ -139,6 +149,6 @@ async function getRandomPeers(filePath: string): Promise<void> {
 
 
 loginNodeFromSetupFile("./bcnode-setup.txt")
-    .then(() => getRandomPeers("./peers.txt"))
+    .then((blockchainAddress) => getRandomPeers("./peers.txt", blockchainAddress))
     .then(() => console.log("Login process complete."))
     .catch((error) => console.error("Login process encountered an error:", error));
