@@ -45,8 +45,8 @@ class BlockChain {
             throw new Error("Incomplete transaction detail");
         }
 
-        const sender_bal = Number(this.addr_bal.get(sender));
-        const get_prev_snonce = Number(this.addr_nonce.get(sender));
+        const sender_bal = this.addr_bal.get(sender) ?? 0;
+        const get_prev_snonce = this.addr_nonce.get(sender) ?? 0;
         this.addr_nonce.set(sender, get_prev_snonce + 1);
 
         if(amount < 0) {
@@ -57,7 +57,7 @@ class BlockChain {
             throw new Error("Insufficient fund");
         }
 
-        const sender_nonce = Number(this.addr_nonce.get(sender));
+        const sender_nonce = this.addr_nonce.get(sender) ?? 0;
         if (n_nonce !== sender_nonce) {
             throw new Error("Invalid nonce value");
         }
