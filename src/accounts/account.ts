@@ -59,9 +59,12 @@ class Account {
         const compact_sig = Buffer.concat([r, s]);
         const base58_sig = base58.encode(compact_sig);
 
+        this.n_nonce += 1;
+        const tx_nonce = this.n_nonce;
+
         // So the private Key becomes inaccessible after signing a transaction
         priv_key = "";
-        const tx_nonce = this.n_nonce + 1;
+        
         return { base58_sig, tx_nonce };
     }
 }
