@@ -1,4 +1,3 @@
-import calc_merkleroot from "./merkleroot";
 import { TxPlaceHolder, BlockReward, BlockTime } from "../utils/core_constants";
 import Account from "../accounts/account";
 import Transaction from "./transaction";
@@ -10,11 +9,13 @@ class BlockChain {
     chain: Block[];
     difficulty: number = 3;
     addr_bal: Map<string, number>;
+    addr_nonce: Map<string, number>;
 
     constructor() {
         this.tx_pool = [];
         this.chain = [];
         this.addr_bal = new Map<string, number>();
+        this.addr_nonce = new Map<string, number>();
         this.genesis_block();
     }
 
@@ -38,13 +39,15 @@ class BlockChain {
     }
 
     add_new_tx(transaction: Transaction, pub_key: string): Transaction {
-        const { amount, sender, recipient, signature } = transaction;
+        const { amount, sender, recipient, signature, n_nonce } = transaction;
 
-        if (!amount || !sender || !recipient || !signature) {
+        if (!amount || !sender || !recipient || !signature || !n_nonce) {
             throw new Error("Incomplete transaction detail");
         }
 
-        const sender_bal = this.addr_bal.get(sender) || 0;
+        const sender_bal = Number(this.addr_bal.get(sender));
+        const get_prev_snonce = Number(this.addr_nonce.get(sender));
+        this.addr_nonce.set(sender, get_prev_snonce + 1);
 
         if(amount < 0) {
             throw new Error("Invalid amount");
@@ -52,6 +55,11 @@ class BlockChain {
 
         if (amount > sender_bal) {
             throw new Error("Insufficient fund");
+        }
+
+        const sender_nonce = Number(this.addr_nonce.get(sender));
+        if (n_nonce !== sender_nonce) {
+            throw new Error("Invalid nonce value");
         }
 
         if (!Transaction.verify_tx_sig(transaction, pub_key)) {
@@ -73,7 +81,7 @@ class BlockChain {
         for (const transaction of transactions) {
             const { amount,  recipient } = transaction;
 
-            const recipient_bal = this.addr_bal.get(recipient) || 0;
+            const recipient_bal = Number(this.addr_bal.get(recipient));
 
             this.addr_bal.set(recipient, recipient_bal + amount)
         }
@@ -98,11 +106,14 @@ class BlockChain {
             comment: comment
         }
 
+        const { base58_sig, tx_nonce } = account.sign_tx(reward_placeholder, priv_key)
+
         const reward_tx = new Transaction(
             BlockReward, 
             account.blockchain_addr, 
             miner_addr, 
-            Account.sign_tx(reward_placeholder, priv_key),
+            base58_sig,
+            tx_nonce,
             comment
         );
 
@@ -137,16 +148,17 @@ class BlockChain {
         return this.difficulty;
     }
 
-    is_valid_chain(chain: BlockChain['chain']): boolean {
-        for (const block in chain) {
-            return true;
-        }
-        return true;
-    }
+    // Todo implement this methods 
+    // is_valid_chain(chain: BlockChain['chain']): boolean {
+    //     for (const block in chain) {
+    //         return true;
+    //     }
+    //     return true;
+    // }
 
-    sync_chain(local: BlockChain, remote: BlockChain): BlockChain {
-        return remote || local;
-    }
+    // sync_chain(local: BlockChain, remote: BlockChain): BlockChain {
+    //     return remote || local;
+    // }
 }
 
 

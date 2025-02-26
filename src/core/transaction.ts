@@ -10,22 +10,24 @@ class Transaction {
     sender: string;
     recipient: string;
     signature: string;
+    n_nonce: number;
     comment?: string;
 
-    constructor(amount: number, sender: string, recipient: string, signature: string, comment?: string) {
+    constructor(amount: number, sender: string, recipient: string, signature: string, n_nonce: number, comment?: string) {
         this.amount = amount;
         this.sender = sender;
         this.recipient = recipient;
         this.signature = signature;
+        this.n_nonce = n_nonce;
         this.comment = comment;
     }
 
     static verify_tx_sig(transaction: Transaction, publicKey: string): boolean {
-        const { amount, sender, recipient, comment, signature } = transaction;
+        const { amount, sender, recipient, signature, n_nonce, comment } = transaction;
         
         const tx_data_str = comment 
-            ?`${amount}${sender}${recipient}${comment}`
-            :`${amount}${sender}${recipient}`;
+            ?`${amount}${sender}${recipient}${comment}${n_nonce}`
+            :`${amount}${sender}${recipient}${n_nonce}`;
         
         const base58_sig = signature
         const compact_sig = base58.decode(base58_sig);
@@ -39,9 +41,10 @@ class Transaction {
         return key.verify(hashed_tx, tx_signature);
     }
 
-    is_valid_tx(): boolean {
-        return true;
-    }
+    // Todo implement this method
+    // is_valid_tx(): boolean {
+    //     return true;
+    // }
 }
 
 export default Transaction;

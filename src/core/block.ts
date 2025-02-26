@@ -32,19 +32,20 @@ class Block {
         this.block_header.block_hash = hash;
     }
 
-    contain_valid_tx() {
-        for (const tx of this.transactions) {
-            if (!tx) {
-                throw new Error("Block does not contain any tx.")
-            }
+    // Todo implement this method
+    // contain_valid_tx() {
+    //     for (const tx of this.transactions) {
+    //         if (!tx) {
+    //             throw new Error("Block does not contain any tx.")
+    //         }
 
-            if (!tx.is_valid_tx()) {
-                return false;
-            }
-        }
+    //         if (!tx.is_valid_tx()) {
+    //             return false;
+    //         }
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 }
 
 
