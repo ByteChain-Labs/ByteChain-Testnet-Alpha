@@ -10,11 +10,13 @@ class Account {
     priv_key: string;
     pub_key: string;
     blockchain_addr: string;
+    n_nonce: number;
 
     constructor() {
         this.priv_key = ec.genKeyPair().getPrivate('hex');
         this.pub_key = Account.create_pub_key(this.priv_key);
         this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
+        this.n_nonce = 0;
     }
 
     // Generates the public key from a private key
@@ -39,7 +41,7 @@ class Account {
     }
 
     // Allow all accounts to be able to sign transaction
-    static sign_tx(transaction: TxPlaceHolder, priv_key: string): string {
+    sign_tx(transaction: TxPlaceHolder, priv_key: string): { base58_sig: string, tx_nonce: number } {
         const pub_key = Account.create_pub_key(priv_key);
         const generated_addr = Account.create_blockchain_addr(pub_key);
 
@@ -59,8 +61,8 @@ class Account {
 
         // So the private Key becomes inaccessible after signing a transaction
         priv_key = "";
-        
-        return base58_sig;
+        const tx_nonce = this.n_nonce + 1;
+        return { base58_sig, tx_nonce };
     }
 }
 
