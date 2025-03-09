@@ -35,7 +35,7 @@ class Account {
         const payload = Buffer.concat([version_byte, ripemd160_hash]);
         const checksum = crypto.createHash('sha256').update(crypto.createHash('sha256').update(payload).digest()).digest().slice(0, 4);
         const final_payload = Buffer.concat([payload, checksum]);
-        const blockchain_addr = "0x" + base58.encode(final_payload);
+        const blockchain_addr = base58.encode(final_payload);
         
         return blockchain_addr;
     }
@@ -49,8 +49,8 @@ class Account {
             throw new Error('You cannot sign transactions for another account.');
         }
 
-        const { amount, sender, recipient, comment } = transaction;
-        const data_str = `${amount}${sender}${recipient}${comment}`;
+        const { amount, sender, recipient, timestamp } = transaction;
+        const data_str = `${amount}${sender}${recipient}${timestamp}`;
         const hashed_tx = hash_tobuf(data_str);
         const key_pair = ec.keyFromPrivate(priv_key, 'hex')
         const signature = key_pair.sign(hashed_tx, 'hex');

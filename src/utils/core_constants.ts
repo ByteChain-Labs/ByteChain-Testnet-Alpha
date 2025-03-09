@@ -1,11 +1,11 @@
 const BlockReward: number = 1024;
-const BlockTime: number = 5000;
+const BlockTime: number = 100;
 
 type TxPlaceHolder = {
     amount: number,
     sender: string,
     recipient: string,
-    comment?: string
+    timestamp: number,
 }
 
 type BlockHeader = {
