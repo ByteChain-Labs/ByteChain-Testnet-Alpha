@@ -1,5 +1,6 @@
 import WebSocket from "ws";
 import { Message, MessageType } from "./message_type";
+import BlockChain from "../core/blockchain";
 
 //Using arbitrary port for now.
 
@@ -8,6 +9,12 @@ import { Message, MessageType } from "./message_type";
 
 
 class TcpServer {
+    bcimpl: BlockChain;
+
+    constructor(bcimpl: BlockChain) {
+        this.bcimpl = bcimpl;
+    }
+
     start() {
         const wss_port: number = 3000;
         const wss = new WebSocket.Server({ port: wss_port });
@@ -23,6 +30,7 @@ class TcpServer {
                     ws.send("Message received. \nSending blocks");
                 } else if (message.type === MessageType.ChainMessage) {
                     ws.send("Message received. \nSending chain data");
+                    ws.send(this.bcimpl.chain);
                 } else {
                     ws.send("Unknown message type.");
                 }

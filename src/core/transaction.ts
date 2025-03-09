@@ -11,23 +11,21 @@ class Transaction {
     recipient: string;
     signature: string;
     n_nonce: number;
-    comment?: string;
+    timestamp: number;
 
-    constructor(amount: number, sender: string, recipient: string, signature: string, n_nonce: number, comment?: string) {
+    constructor(amount: number, sender: string, recipient: string, signature: string, n_nonce: number, timestamp: number) {
         this.amount = amount;
         this.sender = sender;
         this.recipient = recipient;
         this.signature = signature;
         this.n_nonce = n_nonce;
-        this.comment = comment;
+        this.timestamp = timestamp
     }
 
     static verify_tx_sig(transaction: Transaction, publicKey: string): boolean {
-        const { amount, sender, recipient, signature, n_nonce, comment } = transaction;
+        const { amount, sender, recipient, signature, n_nonce, timestamp } = transaction;
         
-        const tx_data_str = comment 
-            ?`${amount}${sender}${recipient}${comment}${n_nonce}`
-            :`${amount}${sender}${recipient}${n_nonce}`;
+        const tx_data_str = `${amount}${sender}${recipient}${n_nonce}${timestamp}`;
         
         const base58_sig = signature
         const compact_sig = base58.decode(base58_sig);

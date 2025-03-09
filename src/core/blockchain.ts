@@ -7,7 +7,7 @@ import Block from "./block";
 class BlockChain {
     tx_pool: Transaction[];
     chain: Block[];
-    difficulty: number = 3;
+    difficulty: number = 4;
     addr_bal: Map<string, number>;
     addr_nonce: Map<string, number>;
 
@@ -28,8 +28,12 @@ class BlockChain {
             transaction
         );
         
-        a_block.block_header.block_hash = "0x00000000000000000000000000000001ByteChain"
-        this.chain.push(a_block)
+        a_block.set_block_props(this.difficulty);
+        this.chain.push(a_block);
+        this.calc_difficulty();
+
+        // Testing by setting this random address to have a balance of 1 billion bytes.
+        this.addr_bal.set("0x2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs", 1000000000)
     }
 
     get_last_block(): Block {
@@ -95,15 +99,16 @@ class BlockChain {
         const account = new Account();
 
         const { blockchain_addr, pub_key, priv_key } = account;
-        const comment = "Block Reward by 0xByteChain";
 
         this.addr_bal.set(blockchain_addr, 1024);
+
+        const timestamp = Date.now();
 
         const reward_placeholder: TxPlaceHolder = { 
             amount: BlockReward, 
             sender: blockchain_addr, 
             recipient: miner_addr,
-            comment: comment
+            timestamp,
         }
 
         const { base58_sig, tx_nonce } = account.sign_tx(reward_placeholder, priv_key)
@@ -114,7 +119,7 @@ class BlockChain {
             miner_addr, 
             base58_sig,
             tx_nonce,
-            comment
+            timestamp,
         );
 
         this.add_new_tx(reward_tx, pub_key);
@@ -123,14 +128,17 @@ class BlockChain {
         new_block.set_block_props(this.difficulty);
 
         this.chain.push(new_block);
-        this.calc_difficulty();
+        this.difficulty = this.calc_difficulty();
 
         return new_block; 
     }
 
     calc_difficulty(): number {
+        const MIN_DIFFICULTY = 3;
+        const MAX_DIFFICULTY = 7;
+
         if (this.chain.length < 2) {
-            return this.difficulty + 1;
+            return this.difficulty;
         }
 
         const prev_n_block_header = this.chain[this.chain.length - 2].block_header;
@@ -138,12 +146,10 @@ class BlockChain {
         const time_diff = n_block_header.timestamp - prev_n_block_header.timestamp;
 
         if (time_diff < BlockTime) {
-            return this.difficulty += Math.round(time_diff / BlockTime);
+            this.difficulty = Math.min(MAX_DIFFICULTY, this.difficulty + 1);
         } else if (time_diff > BlockTime) {
-            return this.difficulty -= Math.round(time_diff / BlockTime);
+            this.difficulty = Math.max(MIN_DIFFICULTY, this.difficulty - 1);
         }
-
-        this.difficulty = Math.max(this.difficulty, 1);
 
         return this.difficulty;
     }
