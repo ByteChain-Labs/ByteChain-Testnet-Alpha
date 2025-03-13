@@ -24,6 +24,10 @@ class Transaction {
 
     static verify_tx_sig(transaction: Transaction, publicKey: string): boolean {
         const { amount, sender, recipient, signature, n_nonce, timestamp } = transaction;
+
+        if (!amount || !sender || !recipient || !signature || !n_nonce || !timestamp) {
+            throw new Error("Incomplete transaction data.")
+        }
         
         const tx_data_str = `${amount}${sender}${recipient}${n_nonce}${timestamp}`;
         

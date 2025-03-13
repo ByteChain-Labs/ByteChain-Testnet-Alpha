@@ -12,11 +12,20 @@ class Account {
     blockchain_addr: string;
     n_nonce: number;
 
-    constructor() {
-        this.priv_key = ec.genKeyPair().getPrivate('hex');
-        this.pub_key = Account.create_pub_key(this.priv_key);
-        this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
-        this.n_nonce = 0;
+    constructor(priv_key?: string) {
+        if (priv_key) {
+            this.priv_key = priv_key;
+            this.pub_key = Account.create_pub_key(this.priv_key);
+            this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
+            this.n_nonce = 2; // Just a random nonce.
+        } else {
+            this.priv_key = ec.genKeyPair().getPrivate('hex');
+            this.pub_key = Account.create_pub_key(this.priv_key);
+            this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
+            this.n_nonce = 0;
+        }
+
+        
     }
 
     // Generates the public key from a private key
@@ -41,7 +50,7 @@ class Account {
     }
 
     // Allow all accounts to be able to sign transaction
-    sign_tx(transaction: TxPlaceHolder, priv_key: string): { base58_sig: string, tx_nonce: number } {
+    sign_tx(transaction: TxPlaceHolder, priv_key: string): { signature: string, tx_nonce: number } {
         const pub_key = Account.create_pub_key(priv_key);
         const generated_addr = Account.create_blockchain_addr(pub_key);
 
@@ -50,14 +59,18 @@ class Account {
         }
 
         const { amount, sender, recipient, timestamp } = transaction;
+
+        if (!amount || !sender || !recipient || !timestamp) {
+            throw new Error("Incomplete transaction data.")
+        }
         const data_str = `${amount}${sender}${recipient}${timestamp}`;
         const hashed_tx = hash_tobuf(data_str);
         const key_pair = ec.keyFromPrivate(priv_key, 'hex')
-        const signature = key_pair.sign(hashed_tx, 'hex');
-        const r = signature.r.toArrayLike(Buffer, 'be', 32);
-        const s = signature.s.toArrayLike(Buffer, 'be', 32);
+        const sig = key_pair.sign(hashed_tx, 'hex');
+        const r = sig.r.toArrayLike(Buffer, 'be', 32);
+        const s = sig.s.toArrayLike(Buffer, 'be', 32);
         const compact_sig = Buffer.concat([r, s]);
-        const base58_sig = base58.encode(compact_sig);
+        const signature = base58.encode(compact_sig);
 
         this.n_nonce += 1;
         const tx_nonce = this.n_nonce;
@@ -65,7 +78,7 @@ class Account {
         // So the private Key becomes inaccessible after signing a transaction
         priv_key = "";
         
-        return { base58_sig, tx_nonce };
+        return { signature, tx_nonce };
     }
 }
 

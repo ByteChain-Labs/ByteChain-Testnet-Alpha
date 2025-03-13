@@ -111,13 +111,13 @@ class BlockChain {
             timestamp,
         }
 
-        const { base58_sig, tx_nonce } = account.sign_tx(reward_placeholder, priv_key)
+        const { signature, tx_nonce } = account.sign_tx(reward_placeholder, priv_key)
 
         const reward_tx = new Transaction(
             BlockReward, 
             account.blockchain_addr, 
             miner_addr, 
-            base58_sig,
+            signature,
             tx_nonce,
             timestamp,
         );
@@ -137,13 +137,15 @@ class BlockChain {
         const MIN_DIFFICULTY = 3;
         const MAX_DIFFICULTY = 7;
 
-        if (this.chain.length < 2) {
+        const BLOCK_WINDOW = 3;
+
+        if (this.chain.length < BLOCK_WINDOW) {
             return this.difficulty;
         }
 
-        const prev_n_block_header = this.chain[this.chain.length - 2].block_header;
+        const prev_block_header = this.chain[this.chain.length - BLOCK_WINDOW].block_header;
         const n_block_header = this.get_last_block().block_header;
-        const time_diff = n_block_header.timestamp - prev_n_block_header.timestamp;
+        const time_diff = n_block_header.timestamp - prev_block_header.timestamp;
 
         if (time_diff < BlockTime) {
             this.difficulty = Math.min(MAX_DIFFICULTY, this.difficulty + 1);
