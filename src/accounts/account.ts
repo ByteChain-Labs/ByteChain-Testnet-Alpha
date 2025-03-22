@@ -17,15 +17,13 @@ class Account {
             this.priv_key = priv_key;
             this.pub_key = Account.create_pub_key(this.priv_key);
             this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
-            this.n_nonce = 2; // Just a random nonce.
+            this.n_nonce = 0; // Just a random nonce for now.
         } else {
             this.priv_key = ec.genKeyPair().getPrivate('hex');
             this.pub_key = Account.create_pub_key(this.priv_key);
             this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
             this.n_nonce = 0;
         }
-
-        
     }
 
     // Generates the public key from a private key
