@@ -7,7 +7,7 @@ import Block from "./block";
 class BlockChain {
     tx_pool: Transaction[];
     chain: Block[];
-    difficulty: number = 4;
+    difficulty: number = 3;
     addr_bal: Map<string, number>;
     addr_nonce: Map<string, number>;
 
@@ -33,7 +33,7 @@ class BlockChain {
         this.calc_difficulty();
 
         // Testing by setting this random address to have a balance of 1 billion bytes.
-        this.addr_bal.set("0x2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs", 1000000000)
+        this.addr_bal.set("2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs", 1000000000)
     }
 
     get_last_block(): Block {
@@ -43,9 +43,9 @@ class BlockChain {
     }
 
     add_new_tx(transaction: Transaction, pub_key: string): Transaction {
-        const { amount, sender, recipient, signature, n_nonce } = transaction;
+        const { amount, sender, recipient, signature, nonce } = transaction;
 
-        if (!amount || !sender || !recipient || !signature || !n_nonce) {
+        if (!amount || !sender || !recipient || !signature || !nonce) {
             throw new Error("Incomplete transaction detail");
         }
 
@@ -62,16 +62,16 @@ class BlockChain {
         }
 
         const sender_nonce = this.addr_nonce.get(sender) ?? 0;
-        if (n_nonce !== sender_nonce) {
+        if (nonce !== sender_nonce) {
             throw new Error("Invalid nonce value");
         }
 
-        if (!Transaction.verify_tx_sig(transaction, pub_key)) {
+        if (!transaction.verify_tx_sig(pub_key)) {
             throw new Error("Invalid Transaction");
         }
 
-        this.addr_bal.set(sender, sender_bal - amount);
         this.tx_pool.push(transaction);
+        this.addr_bal.set(sender, sender_bal - amount);
 
         return transaction;
     }
@@ -134,10 +134,10 @@ class BlockChain {
     }
 
     calc_difficulty(): number {
-        const MIN_DIFFICULTY = 3;
-        const MAX_DIFFICULTY = 7;
+        const MIN_DIFFICULTY = 2;
+        const MAX_DIFFICULTY = 6;
 
-        const BLOCK_WINDOW = 3;
+        const BLOCK_WINDOW = 4;
 
         if (this.chain.length < BLOCK_WINDOW) {
             return this.difficulty;
@@ -157,12 +157,17 @@ class BlockChain {
     }
 
     // Todo implement this methods 
-    // is_valid_chain(chain: BlockChain['chain']): boolean {
-    //     for (const block in chain) {
-    //         return true;
-    //     }
-    //     return true;
-    // }
+    is_valid_chain(chain: BlockChain['chain']): boolean {
+        for (const block_index in chain) {
+            const block = chain[block_index];
+            const transactions = block.transactions;
+            for (let tx_index = 0; tx_index < transactions.length; tx_index += 1) {
+                const tx = transactions[tx_index];
+                tx.is_valid_tx();
+            }
+        }
+        return true;
+    }
 
     // sync_chain(local: BlockChain, remote: BlockChain): BlockChain {
     //     return remote || local;
