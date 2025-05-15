@@ -1,11 +1,15 @@
 const BlockReward: number = 1024;
 const BlockTime: number = 100;
 
+const MIN_DIFFICULTY = 3;
+const MAX_DIFFICULTY = 8;
+
+const BLOCK_WINDOW = 4;
+
 type TxPlaceHolder = {
     amount: number,
     sender: string,
     recipient: string,
-    timestamp: number,
 }
 
 type BlockHeader = {
@@ -22,4 +26,4 @@ const print = (...data: any): void => {
 }
 
 
-export { BlockTime, TxPlaceHolder, BlockReward, BlockHeader, print };
+export { BlockTime, TxPlaceHolder, BlockReward, BlockHeader, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW, print };

@@ -21,15 +21,19 @@ class Block {
     }
 
     set_block_props(difficulty: number) {
-        this.block_header.merkleroot = calc_merkleroot<Transaction>(this.transactions);
-        const { nonce, block_height, timestamp, merkleroot,  prev_block_hash } = this.block_header;
+        try {
+            this.block_header.merkleroot = calc_merkleroot<Transaction>(this.transactions);
+            const { nonce, block_height, timestamp, merkleroot,  prev_block_hash } = this.block_header;
 
-        const block_data_str = `${nonce}${block_height}${timestamp}${merkleroot}${prev_block_hash}${this.transactions}`;
+            const block_data_str = `${nonce}${block_height}${timestamp}${merkleroot}${prev_block_hash}${this.transactions}`;
 
-        const { n_nonce, hash } = proof_of_work(block_data_str, difficulty);
+            const { n_nonce, hash } = proof_of_work(block_data_str, difficulty);
 
-        this.block_header.nonce = n_nonce;
-        this.block_header.block_hash = hash;
+            this.block_header.nonce = n_nonce;
+            this.block_header.block_hash = hash;
+        } catch (err) {
+            throw new Error('Unable to set block property')            
+        }
     }
 
     // Todo implement this method
