@@ -1,67 +1,182 @@
-import { hash_tobuf } from "../utils/crypto";
-import base58 from "bs58";
-import { ec as EC } from 'elliptic';
-
-const ec = new EC('secp256k1');
-
+import BigNumber from 'bignumber.js';
+import { secp256k1 } from '@noble/curves/secp256k1';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex, hexToBytes } from '@ethereumjs/util';
+import Account from '../accounts/account';
 
 class Transaction {
-    amount: number;
+    id: string;
     sender: string;
     recipient: string;
+    amount: BigNumber;
+    fee: BigNumber;
     signature: string;
     nonce: number;
     timestamp: number;
 
-    constructor(amount: number, sender: string, recipient: string, signature: string, nonce: number) {
-        this.amount = amount;
+    constructor(sender: string, recipient: string, amount: BigNumber, fee: BigNumber, nonce: number, signature: string = ''
+    ) {
         this.sender = sender;
         this.recipient = recipient;
-        this.signature = signature;
+        this.amount = amount;
+        this.fee = fee;
         this.nonce = nonce;
+        this.signature = signature;
         this.timestamp = Date.now();
+        this.id = this.calculateHash();
     }
 
-    verify_tx_sig(publicKey: string): boolean {
+    getSignableData(): string {
+        return [
+            this.sender,
+            this.recipient,
+            this.amount.toFixed(),
+            this.fee.toFixed(),
+            this.nonce.toString(),
+            this.timestamp.toString()
+        ].join('|');
+    }
+
+    calculateHash(): string {
+        const dataToHash = Buffer.from(this.getSignableData(), 'utf8');
+        return bytesToHex(sha256(dataToHash));
+    }
+
+    verifySignature(): boolean {
         try {
-            const { amount, sender, recipient, signature, nonce } = this;
-
-            if (!amount || !sender || !recipient || !signature || !nonce) {
-                throw new Error("Incomplete transaction data.")
+            if (!this.sender || !this.signature || !this.amount || !this.fee ||
+                typeof this.nonce !== 'number' || typeof this.timestamp !== 'number') {
+                console.error("TX Verification Error: Incomplete transaction data for signature check.");
+                return false;
             }
-            
-            const tx_data_str = `${amount}${sender}${recipient}${nonce}`;
-            
-            const base58_sig = signature
-            const compact_sig = base58.decode(base58_sig);
 
-            const r = compact_sig.slice(0, 32);
-            const s = compact_sig.slice(32, 64);
-            const tx_signature = { r, s };
-            const hashed_tx = hash_tobuf(tx_data_str);
-            const key = ec.keyFromPublic(publicKey, 'hex');
-            
-            return key.verify(hashed_tx, tx_signature);
+            const messageHashBytes = sha256(Buffer.from(this.getSignableData(), 'utf8'));
+
+            if (this.signature.length !== 130) {
+                console.error(`TX Verification Error: Invalid signature format length (${this.signature.length}).`);
+                return false;
+            }
+
+            const r_hex = this.signature.substring(0, 64);
+            const s_hex = this.signature.substring(64, 128);
+            const v_hex = this.signature.substring(128, 130);
+
+            const r_bytes = hexToBytes(`0x${r_hex}`);
+            const s_bytes = hexToBytes(`0x${s_hex}`);
+            const recoveryId = parseInt(v_hex, 16);
+
+            const sig = secp256k1.Signature.fromCompact(Buffer.concat([r_bytes, s_bytes])).addRecoveryBit(recoveryId);
+
+            const recoveredPubKeyBytes = sig.recoverPublicKey(messageHashBytes).toRawBytes(false);
+            const recoveredPubKeyHex = bytesToHex(recoveredPubKeyBytes);
+
+            const recoveredAddress = Account.create_pub_key(recoveredPubKeyHex);
+
+            if (recoveredAddress !== this.sender) {
+                console.error(`TX Verification Error: Recovered address (${recoveredAddress}) does not match sender (${this.sender}).`);
+                return false;
+            }
+
+            const isValid = secp256k1.verify(sig, messageHashBytes, recoveredPubKeyBytes);
+            if (!isValid) {
+                console.error("TX Verification Error: secp256k1.verify method returned false.");
+                return false;
+            }
+
+            return true;
         } catch (err) {
-            throw new Error('Unable to verify transaction signature');
+            console.error(`TX Signature Verification Failed unexpectedly for TX ID ${this.id || 'unknown'}:`, (err as Error).message);
+            return false;
         }
     }
 
-    // Todo implement this method
-    is_valid_tx(pub_key: string): boolean {
+    isValid(): boolean {
         try {
+            if (!this.id || !this.sender || !this.recipient || !this.signature ||
+                typeof this.nonce !== 'number' || typeof this.timestamp !== 'number' ||
+                !this.amount || !this.fee || this.amount.isNaN() || this.fee.isNaN() ||
+                this.amount.isNegative() || this.fee.isNegative() || this.nonce < 0) {
+                console.error("TX Validation Error: Missing, invalid, or negative essential fields.");
+                return false;
+            }
+
+            if (this.id !== this.calculateHash()) {
+                console.error(`TX Validation Error: ID mismatch. Stored: ${this.id}, Calculated: ${this.calculateHash()}`);
+                return false;
+            }
+
             const currentTime = Date.now();
-            const MAX_TIME_DIFF = 300000; // 5 minutes in milliseconds
-
-            if (Math.abs(currentTime - this.timestamp) > MAX_TIME_DIFF) {
-                throw new Error('Transaction timestamp is too old or in future');
+            const MAX_TIME_DIFF_MS = 5 * 60 * 1000;
+            if (Math.abs(currentTime - this.timestamp) > MAX_TIME_DIFF_MS) {
+                console.error(`TX Validation Error: Timestamp out of range. Current: ${currentTime}, TX: ${this.timestamp}`);
+                return false;
             }
 
-            return this.verify_tx_sig(pub_key);
+            if (!this.verifySignature()) {
+                console.error("TX Validation Error: Signature verification failed.");
+                return false;
+            }
+
+            return true;
         } catch (err) {
-            throw new Error('Transaction in invalid');
+            console.error(`TX Validation Failed unexpectedly for TX ID ${this.id || 'unknown'}:`, (err as Error).message);
+            return false;
         }
+    }
+
+    serialize(): string {
+        const parts: string[] = [
+            this.id,
+            this.sender,
+            this.recipient,
+            this.amount.toFixed(),
+            this.fee.toFixed(),
+            this.nonce.toString(),
+            this.timestamp.toString(),
+            this.signature
+        ];
+        return parts.join('|');
+    }
+
+    static deserialize(serializedTx: string): Transaction {
+        const parts = serializedTx.split('|');
+        if (parts.length !== 8) {
+            throw new Error(`Invalid serialized transaction format. Expected 8 parts, got ${parts.length}.`);
+        }
+
+        const [id, sender, recipient, amountStr, feeStr, nonceStr, timestampStr, signature] = parts;
+
+        const amount = new BigNumber(amountStr);
+        if (amount.isNaN()) {
+            throw new Error("Deserialization Error: Invalid amount in serialized transaction.");
+        }
+
+        const fee = new BigNumber(feeStr);
+        if (fee.isNaN()) {
+            throw new Error("Deserialization Error: Invalid fee in serialized transaction.");
+        }
+
+        const nonce = parseInt(nonceStr, 10);
+        if (isNaN(nonce)) {
+            throw new Error("Deserialization Error: Invalid nonce in serialized transaction.");
+        }
+
+        const timestamp = parseInt(timestampStr, 10);
+        if (isNaN(timestamp)) {
+            throw new Error("Deserialization Error: Invalid timestamp in serialized transaction.");
+        }
+
+        const tx = new Transaction(sender, recipient, amount, fee, nonce, signature);
+        tx.timestamp = timestamp;
+        tx.id = id;
+
+        if (tx.calculateHash() !== id) {
+            throw new Error("Deserialization Error: Transaction ID mismatch. Data integrity compromised.");
+        }
+
+        return tx;
     }
 }
+
 
 export default Transaction;
