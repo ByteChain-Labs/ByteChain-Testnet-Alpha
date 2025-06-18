@@ -1,3 +1,4 @@
+import { BlockHeader }  from "../utils/core_constants"
 import proof_of_work from "../consensus/pow";
 import Transaction from "./transaction";
 import calc_merkleroot from "./merkleroot";
