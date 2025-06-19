@@ -1,5 +1,4 @@
-import { TxPlaceHolder, BlockReward, BlockTime, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW } from "../utils/core_constants";
-import Account from "../accounts/account";
+import { BLOCK_REWARD, BLOCK_TIME, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW, BC_NAME } from "../utils/core_constants";
 import Transaction from "./transaction";
 import Block from "./block";
 
@@ -42,44 +41,50 @@ class BlockChain {
         return last_block;
     }
 
-    add_new_tx(transaction: Transaction, pub_key: string): Transaction {
-        const { amount, sender, recipient, signature, nonce } = transaction;
-        const get_prev_snonce = this.addr_nonce.get(sender) ?? 0;
-        const sender_bal = this.addr_bal.get(sender) ?? 0;
-
+    add_new_tx(tx: Transaction, pub_key: string): Transaction {
         try {
+            const { amount, sender, recipient, signature, nonce } = tx;
+            const prev_nonce = this.addr_nonce.get(sender) ?? 0;
+            const sender_bal = this.addr_bal.get(sender) ?? 0;
 
-            if (!amount || !sender || !recipient || !signature || !nonce) {
-                console.error("Incomplete transaction detail");
+            if (sender === BC_NAME) {
+                if (!amount || !recipient || nonce === undefined) {
+                    throw new Error("Incomplete coinbase transaction detail");
+                }
+
+                this.tx_pool.push(tx);
+                return tx;
+            } else {
+                if (!amount || !sender || !recipient || !signature || !nonce || nonce === undefined) {
+                    throw new Error("Incomplete transaction detail");
+                }
+                this.addr_nonce.set(sender, prev_nonce + 1);
+
+                if(amount < 0) {
+                    throw new Error("Invalid amount");
+                }
+
+                if (amount > sender_bal) {
+                    throw new Error("Insufficient fund");
+                }
+
+                const sender_nonce = this.addr_nonce.get(sender) ?? 0;
+
+                if (nonce !== sender_nonce) {
+                    throw new Error("Invalid nonce value");
+                }
+
+                if (!tx.verify_tx_sig(pub_key)) {
+                    throw new Error("Invalid Transaction");
+                }
+                
+                this.tx_pool.push(tx);
+                this.addr_bal.set(sender, sender_bal - amount);
             }
 
-            this.addr_nonce.set(sender, get_prev_snonce + 1);
-
-            if(amount < 0) {
-                console.error("Invalid amount");
-            }
-
-            if (amount > sender_bal) {
-                console.error("Insufficient fund");
-            }
-
-            const sender_nonce = this.addr_nonce.get(sender) ?? 0;
-            if (nonce !== sender_nonce) {
-                console.error("Invalid nonce value");
-            }
-
-            if (!transaction.verify_tx_sig(pub_key)) {
-                console.error("Invalid Transaction");
-            }
-            
-            this.tx_pool.push(transaction);
-            this.addr_bal.set(sender, sender_bal - amount);
-
-            return transaction;
+            return tx;
         } catch (err) {
-            this.addr_nonce.set(sender, get_prev_snonce + 1);
-            this.addr_bal.set(sender, sender_bal - amount);
-            throw new Error(`Error adding transaction to tx_pool: ${err}`)
+            throw new Error("Error adding transaction to tx_pool");
         }
     }
 
@@ -91,11 +96,15 @@ class BlockChain {
             const block = new Block(n_block_height, Date.now(), block_hash, transactions);
 
             for (const transaction of transactions) {
-                const { amount,  recipient } = transaction;
-
-                const recipient_bal = Number(this.addr_bal.get(recipient));
-
-                this.addr_bal.set(recipient, recipient_bal + amount)
+                const { amount, sender,  recipient } = transaction;
+                
+                if (sender === BC_NAME) {
+                    const recipient_bal = this.addr_bal.get(recipient) ?? 0;
+                    this.addr_bal.set(recipient, recipient_bal + amount)
+                } else {
+                    const recipient_bal = this.addr_bal.get(recipient) ?? 0;
+                    this.addr_bal.set(recipient, recipient_bal + amount)
+                }
             }
 
             this.tx_pool = [];
@@ -108,29 +117,11 @@ class BlockChain {
 
     mine_block(miner_addr: string): Block {
         try {
-            const account = new Account();
+            const reward_tx = new Transaction(BLOCK_REWARD, BC_NAME, miner_addr, "", 0);
+            reward_tx.create_tx_id();
 
-            const { blockchain_addr, pub_key } = account;
-
-            this.addr_bal.set(blockchain_addr, 1024);
-
-            const reward_placeholder: TxPlaceHolder = { 
-                amount: BlockReward, 
-                sender: blockchain_addr, 
-                recipient: miner_addr,
-            }
-
-            const { signature, tx_nonce } = account.sign_tx(reward_placeholder)
-
-            const reward_tx = new Transaction(
-                reward_placeholder.amount, 
-                reward_placeholder.sender, 
-                reward_placeholder.recipient, 
-                signature,
-                tx_nonce,
-            );
-
-            this.add_new_tx(reward_tx, pub_key);
+            this.add_new_tx(reward_tx, BC_NAME);
+            // this.tx_pool.push(reward_tx);
 
             const new_block = this.add_new_block();
             new_block.set_block_props(this.difficulty);
@@ -140,13 +131,12 @@ class BlockChain {
 
             return new_block;
         } catch (err) {
-            throw new Error(`Error mining block: ${err}`);
+            throw new Error("Error mining block");
         }
     }
 
     calc_difficulty(): number {
         try {
-
             if (this.chain.length < BLOCK_WINDOW) {
                 return this.difficulty;
             }
@@ -155,16 +145,15 @@ class BlockChain {
             const n_block_header = this.get_last_block().block_header;
             const time_diff = n_block_header.timestamp - prev_block_header.timestamp;
 
-            if (time_diff < BlockTime) {
+            if (time_diff < BLOCK_TIME) {
                 this.difficulty = Math.min(MAX_DIFFICULTY, this.difficulty + 1);
-            } else if (time_diff > BlockTime) {
+            } else if (time_diff > BLOCK_TIME) {
                 this.difficulty = Math.max(MIN_DIFFICULTY, this.difficulty - 1);
             }
 
             return this.difficulty;
         } catch (err) {
-            console.error('Error calculating difficulty: ', err);
-            return MAX_DIFFICULTY;
+            throw new Error("Error calculating difficulty");
         }
     }
 

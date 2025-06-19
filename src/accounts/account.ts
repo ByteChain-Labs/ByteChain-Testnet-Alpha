@@ -1,35 +1,32 @@
 import crypto from 'crypto';
 import { ec as EC } from 'elliptic';
 import base58 from 'bs58';
-import { TxPlaceHolder } from '../utils/core_constants';
-import { hash_tobuf } from '../utils/crypto';
 import BlockChain from '../core/blockchain';
+import Transaction from '../core/transaction';
 
 const ec = new EC('secp256k1');
 
-const bytechain = new BlockChain();
 
 class Account {
     private priv_key: string;
     pub_key: string;
     blockchain_addr: string;
     private n_nonce: number;
-    private balance: number;
+    bc_instance: BlockChain;
 
-    constructor(priv_key?: string) {
+    constructor(bc_instance: BlockChain, priv_key?: string) {
         if (priv_key) {
             this.priv_key = priv_key;
             this.pub_key = Account.create_pub_key(this.priv_key);
             this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
-            this.n_nonce = bytechain.addr_nonce.get(this.blockchain_addr) ?? 0;
-            this.balance = bytechain.addr_bal.get(this.blockchain_addr) ?? 0;// For now using the blockchain but will be changed to get it from a node instance
         } else {
             this.priv_key = ec.genKeyPair().getPrivate('hex');
             this.pub_key = Account.create_pub_key(this.priv_key);
             this.blockchain_addr = Account.create_blockchain_addr(this.pub_key);
-            this.n_nonce = 0;
-            this.balance = bytechain.addr_bal.get(this.blockchain_addr) ?? 0;
         }
+
+        this.bc_instance = bc_instance;
+        this.n_nonce = bc_instance.addr_nonce.get(this.blockchain_addr) ?? 0;
     }
 
     // Generates the public key from a private key
@@ -53,30 +50,20 @@ class Account {
         return blockchain_addr;
     }
 
+    check_balance(): number {
+        return this.bc_instance.addr_bal.get(this.blockchain_addr) ?? 0;
+    }
+
     // Allow all accounts to be able to sign transaction
-    sign_tx(transaction: TxPlaceHolder): { signature: string, tx_nonce: number } {
+    acc_sign_tx(amount: number, recipient: string): Transaction {
         try {
-            const { amount, sender, recipient } = transaction;
-
-            if (!amount || !sender || !recipient) {
-                throw new Error("Incomplete transaction data.")
-            }
-            const data_str = `${amount}${sender}${recipient}${this.n_nonce + 1}`;
-            const hashed_tx = hash_tobuf(data_str);
-            const key_pair = ec.keyFromPrivate(this.priv_key, 'hex');
-            const sig = key_pair.sign(hashed_tx, 'hex');
-            const r = sig.r.toArrayLike(Buffer, 'be', 32);
-            const s = sig.s.toArrayLike(Buffer, 'be', 32);
-            const compact_sig = Buffer.concat([r, s]);
-            const signature = base58.encode(compact_sig);
-
+            const tx = new Transaction(amount, this.blockchain_addr, recipient, "", this.n_nonce + 1);
+            const signed_tx = tx.sign_tx(this.priv_key);
             this.n_nonce += 1;
-            const tx_nonce = this.n_nonce;
-                    
-            return { signature, tx_nonce };
+            
+            return signed_tx;
         } catch (err) {
-            this.n_nonce -= 1;
-            throw new Error('Unable to sign transaction');
+            throw new Error('Unable to sign transaction from account class');
         }
     }
 }

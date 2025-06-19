@@ -1,16 +1,11 @@
-const BlockReward: number = 1024;
-const BlockTime: number = 100;
+const BLOCK_TIME: number = 100;
+const BLOCK_REWARD: number = 32;
+const BC_NAME: string = "0xByteChain";
 
 const MIN_DIFFICULTY = 3;
 const MAX_DIFFICULTY = 8;
 
 const BLOCK_WINDOW = 4;
-
-type TxPlaceHolder = {
-    amount: number,
-    sender: string,
-    recipient: string,
-}
 
 type BlockHeader = {
     nonce: number,
@@ -22,8 +17,8 @@ type BlockHeader = {
 }
 
 const print = (...data: any): void => {
-    console.log(...data);
+    console.dir(...data, { depth: null, colors: true });
 }
 
 
-export { BlockTime, TxPlaceHolder, BlockReward, BlockHeader, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW, print };
+export { BLOCK_TIME, BLOCK_REWARD, BC_NAME, BlockHeader, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW, print };
