@@ -4,7 +4,7 @@
   "description": "This is the first testnet of the bytechain network",
   "main": "index.js",
   "scripts": {
-    "gtest": "tsc && node ./build/gen_test",
+    "gtest": "tsc & node ./build/gen_test",
     "test": "tsc & node ./build/test",
     "bcnode": "tsc & node ./build/core/node"
   },
@@ -19,21 +19,13 @@
   "author": "ByteChain-Labs",
   "license": "Apache-2.0",
   "dependencies": {
-    "@ethereumjs/util": "^10.0.0",
-    "@noble/curves": "^1.9.1",
-    "@noble/hashes": "^1.8.0",
     "@types/bs58": "^4.0.4",
     "@types/elliptic": "^6.4.18",
-    "@types/hdkey": "^2.1.0",
     "@types/node": "^22.10.7",
     "@types/ws": "^8.5.14",
-    "bignumber.js": "^9.3.0",
-    "bip39": "^3.1.0",
     "bs58": "^6.0.0",
     "elliptic": "^6.6.0",
     "firebase": "^11.3.1",
-    "hdkey": "^2.1.0",
-    "npm": "^11.4.1",
     "ws": "^8.18.0"
   },
   "devDependencies": {

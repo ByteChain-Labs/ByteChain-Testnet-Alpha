@@ -1,43 +1,24 @@
-const BlockReward: number = 1024;
-const BlockTime: number = 100;
+const BLOCK_TIME: number = 100;
+const BLOCK_REWARD: number = 32;
+const BC_NAME: string = "0xByteChain";
 
 const MIN_DIFFICULTY = 3;
 const MAX_DIFFICULTY = 8;
 
 const BLOCK_WINDOW = 4;
 
-const ADDRESS_VERSION_BYTE = 0xBC;
-const BYTECHAIN_COIN_TYPE = 188;
-
-interface BlockHeader {
-    nonce: number;
-    block_height: number;
-    timestamp: number;
-    merkleroot: string;
-    prev_block_hash: string;
-    block_hash: string;
-    difficulty: number;
-}
-
-type TxPlaceHolder = {
-    amount: number,
-    sender: string,
-    recipient: string,
+type BlockHeader = {
+    nonce: number,
+    block_height: number,
+    timestamp: number,
+    merkleroot: string,
+    prev_block_hash: string,
+    block_hash: string
 }
 
 const print = (...data: any): void => {
-    console.log(...data);
+    console.dir(...data, { depth: null, colors: true });
 }
 
 
-export { 
-    BlockTime, 
-    BlockHeader,
-    TxPlaceHolder, 
-    BlockReward, 
-    ADDRESS_VERSION_BYTE, 
-    BYTECHAIN_COIN_TYPE, 
-    MIN_DIFFICULTY, 
-    MAX_DIFFICULTY, BLOCK_WINDOW, 
-    print 
-};
+export { BLOCK_TIME, BLOCK_REWARD, BC_NAME, BlockHeader, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW, print };
