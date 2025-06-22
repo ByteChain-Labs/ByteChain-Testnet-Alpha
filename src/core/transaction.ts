@@ -11,23 +11,25 @@ class Transaction {
     sender: string;
     recipient: string;
     id: string;
-    signature: string;
+    private publicKey: string;
+    private signature: string;
     nonce: number;
     timestamp: number;
 
-    constructor(amount: number, sender: string, recipient: string, signature: string, nonce: number) {
+    constructor(amount: number, sender: string, recipient: string, publicKey: string, signature: string, nonce: number) {
         this.amount = amount;
         this.sender = sender;
         this.recipient = recipient;
         this.id = "";
+        this.publicKey = publicKey;
         this.signature = signature;
         this.nonce = nonce;
         this.timestamp = Date.now();
     }
 
-    verify_tx_sig(publicKey: string): boolean {
+    verify_tx_sig(): boolean {
         try {
-            const { amount, sender, recipient, id, signature, nonce, timestamp } = this;
+            const { amount, sender, recipient, id, publicKey, signature, nonce, timestamp } = this;
 
             if (!amount || !sender || !recipient || !id || !signature || !nonce || !timestamp) {
                 throw new Error("Incomplete transaction data.")
@@ -37,7 +39,7 @@ class Transaction {
                 return true;
             }
             
-            const tx_data_str = `${amount}${sender}${recipient}${id}${nonce}${timestamp}`;
+            const tx_data_str = `${amount}${sender}${recipient}${id}${publicKey}${nonce}${timestamp}`;
             
             const base58_sig = signature
             const compact_sig = base58.decode(base58_sig);
@@ -63,9 +65,9 @@ class Transaction {
 
     sign_tx(priv_key: string): Transaction {
         try {
-            const { amount, sender, recipient, id, nonce, timestamp } = this;
+            const { amount, sender, recipient, id, publicKey, nonce, timestamp } = this;
 
-            const data_str = `${amount}${sender}${recipient}${id}${nonce}${timestamp}`;
+            const data_str = `${amount}${sender}${recipient}${id}${publicKey}${nonce}${timestamp}`;
             const hashed_tx = hash_tobuf(data_str);
             const key_pair = ec.keyFromPrivate(priv_key, 'hex');
             const sig = key_pair.sign(hashed_tx, 'hex');
@@ -84,7 +86,7 @@ class Transaction {
     }
 
     // Todo implement this method
-    is_valid_tx(pub_key: string): boolean {
+    is_valid_tx(): boolean {
         try {
             const currentTime = Date.now();
             const MAX_TIME_DIFF = 300000; // 5 minutes in milliseconds
@@ -93,7 +95,7 @@ class Transaction {
                 throw new Error('Transaction timestamp is too old or in future');
             }
 
-            return this.verify_tx_sig(pub_key);
+            return this.verify_tx_sig();
         } catch (err) {
             throw new Error('Transaction in invalid');
         }

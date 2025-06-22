@@ -1,9 +1,11 @@
-const BLOCK_TIME: number = 100;
+const BLOCK_TIME_DIFF: number = 500;
 const BLOCK_REWARD: number = 32;
 const BC_NAME: string = "0xByteChain";
+const BC_NAME_PUB: string = "0xByteChainPublicKey";
+const GEN_PREV_HASH: string = "0x00000000000000000000000000000000ByteChain";
 
-const MIN_DIFFICULTY = 3;
-const MAX_DIFFICULTY = 8;
+const MIN_DIFFICULTY = 4;
+const MAX_DIFFICULTY = 10;
 
 const BLOCK_WINDOW = 4;
 
@@ -13,7 +15,8 @@ type BlockHeader = {
     timestamp: number,
     merkleroot: string,
     prev_block_hash: string,
-    block_hash: string
+    block_hash: string,
+    difficulty: number,
 }
 
 const print = (...data: any): void => {
@@ -21,4 +24,10 @@ const print = (...data: any): void => {
 }
 
 
-export { BLOCK_TIME, BLOCK_REWARD, BC_NAME, BlockHeader, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW, print };
+export { 
+    BLOCK_TIME_DIFF, BLOCK_REWARD,
+    BC_NAME, BC_NAME_PUB,
+    GEN_PREV_HASH, BLOCK_WINDOW, 
+    MIN_DIFFICULTY, MAX_DIFFICULTY, 
+    BlockHeader, print 
+};

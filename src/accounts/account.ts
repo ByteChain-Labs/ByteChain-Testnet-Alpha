@@ -57,7 +57,7 @@ class Account {
     // Allow all accounts to be able to sign transaction
     acc_sign_tx(amount: number, recipient: string): Transaction {
         try {
-            const tx = new Transaction(amount, this.blockchain_addr, recipient, "", this.n_nonce + 1);
+            const tx = new Transaction(amount, this.blockchain_addr, recipient, this.pub_key, "", this.n_nonce + 1);
             const signed_tx = tx.sign_tx(this.priv_key);
             this.n_nonce += 1;
             

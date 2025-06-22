@@ -1,4 +1,9 @@
-import { BLOCK_REWARD, BLOCK_TIME, MIN_DIFFICULTY, MAX_DIFFICULTY, BLOCK_WINDOW, BC_NAME } from "../utils/core_constants";
+import {
+    BLOCK_REWARD, BLOCK_TIME_DIFF,
+    MIN_DIFFICULTY, MAX_DIFFICULTY,
+    BLOCK_WINDOW, GEN_PREV_HASH,
+    BC_NAME, BC_NAME_PUB,
+} from "../utils/core_constants";
 import Transaction from "./transaction";
 import Block from "./block";
 
@@ -6,7 +11,7 @@ import Block from "./block";
 class BlockChain {
     tx_pool: Transaction[];
     chain: Block[];
-    difficulty: number = 3;
+    difficulty: number = MIN_DIFFICULTY;
     addr_bal: Map<string, number>;
     addr_nonce: Map<string, number>;
 
@@ -19,20 +24,18 @@ class BlockChain {
     }
 
     genesis_block() {
-        const transaction: Transaction[] = [];
-        const a_block = new Block(
-            0,
-            Date.now(),
-            "0x00000000000000000000000000000000ByteChain",
-            transaction
-        );
-        
-        a_block.set_block_props(this.difficulty);
-        this.chain.push(a_block);
-        this.calc_difficulty();
+        const genesis_recipient = "2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs";
+        const tx = new Transaction(1000000000, BC_NAME, genesis_recipient, BC_NAME_PUB, "", 0)
+        tx.create_tx_id();
+        this.add_new_tx(tx);
 
-        // Testing by setting this random address to have a balance of 1 billion bytes.
-        this.addr_bal.set("2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs", 1000000000)
+        const txs = this.tx_pool;
+
+        const new_block = new Block(0, MIN_DIFFICULTY, GEN_PREV_HASH, txs);
+        new_block.set_block_props();
+
+        this.chain.push(new_block);
+        this.difficulty = this.calc_difficulty();
     }
 
     get_last_block(): Block {
@@ -41,23 +44,20 @@ class BlockChain {
         return last_block;
     }
 
-    add_new_tx(tx: Transaction, pub_key: string): Transaction {
+    add_new_tx(tx: Transaction): Transaction {
         try {
-            const { amount, sender, recipient, signature, nonce } = tx;
+            const { amount, sender, recipient, nonce } = tx;
             const prev_nonce = this.addr_nonce.get(sender) ?? 0;
             const sender_bal = this.addr_bal.get(sender) ?? 0;
 
-            if (sender === BC_NAME) {
-                if (!amount || !recipient || nonce === undefined) {
-                    throw new Error("Incomplete coinbase transaction detail");
-                }
+            if (!amount || !sender || !recipient || nonce === undefined) {
+                throw new Error("Incomplete transaction detail");
+            }
 
+            if (sender === BC_NAME) {
                 this.tx_pool.push(tx);
                 return tx;
             } else {
-                if (!amount || !sender || !recipient || !signature || !nonce || nonce === undefined) {
-                    throw new Error("Incomplete transaction detail");
-                }
                 this.addr_nonce.set(sender, prev_nonce + 1);
 
                 if(amount < 0) {
@@ -74,7 +74,7 @@ class BlockChain {
                     throw new Error("Invalid nonce value");
                 }
 
-                if (!tx.verify_tx_sig(pub_key)) {
+                if (!tx.verify_tx_sig()) {
                     throw new Error("Invalid Transaction");
                 }
                 
@@ -93,7 +93,7 @@ class BlockChain {
             const { block_height, block_hash } = this.get_last_block().block_header;
             const n_block_height = block_height + 1;
             const transactions = this.tx_pool;
-            const block = new Block(n_block_height, Date.now(), block_hash, transactions);
+            const block = new Block(n_block_height, this.difficulty, block_hash, transactions);
 
             for (const transaction of transactions) {
                 const { amount, sender,  recipient } = transaction;
@@ -117,14 +117,13 @@ class BlockChain {
 
     mine_block(miner_addr: string): Block {
         try {
-            const reward_tx = new Transaction(BLOCK_REWARD, BC_NAME, miner_addr, "", 0);
+            const reward_tx = new Transaction(BLOCK_REWARD, BC_NAME, miner_addr, BC_NAME_PUB, "", 0);
             reward_tx.create_tx_id();
 
-            this.add_new_tx(reward_tx, BC_NAME);
-            // this.tx_pool.push(reward_tx);
+            this.add_new_tx(reward_tx);
 
             const new_block = this.add_new_block();
-            new_block.set_block_props(this.difficulty);
+            new_block.set_block_props();
 
             this.chain.push(new_block);
             this.difficulty = this.calc_difficulty();
@@ -145,9 +144,9 @@ class BlockChain {
             const n_block_header = this.get_last_block().block_header;
             const time_diff = n_block_header.timestamp - prev_block_header.timestamp;
 
-            if (time_diff < BLOCK_TIME) {
+            if (time_diff < BLOCK_TIME_DIFF) {
                 this.difficulty = Math.min(MAX_DIFFICULTY, this.difficulty + 1);
-            } else if (time_diff > BLOCK_TIME) {
+            } else if (time_diff > BLOCK_TIME_DIFF) {
                 this.difficulty = Math.max(MIN_DIFFICULTY, this.difficulty - 1);
             }
 
@@ -158,14 +157,19 @@ class BlockChain {
     }
 
     // Todo implement this methods 
-    is_valid_chain(chain: BlockChain['chain']): boolean {
+    is_valid_chain(chain_info: BlockChain): boolean {
+        const chain = chain_info.chain;
+
         for (const block_index in chain) {
             const block = chain[block_index];
             const transactions = block.transactions;
             for (let tx_index = 0; tx_index < transactions.length; tx_index += 1) {
                 const tx = transactions[tx_index];
-                // tx.is_valid_tx();
+                if (!tx.is_valid_tx()) {
+                    throw new Error(`Invalid transaction at block ${block.block_header.block_height}`);
+                }
             }
+            return true;
         }
         return true;
     }
