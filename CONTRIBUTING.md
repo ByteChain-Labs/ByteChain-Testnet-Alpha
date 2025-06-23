@@ -16,7 +16,7 @@ Here's the process for code contributions:
 
 1.  **Fork the Repository**: Start by forking the repository to your own GitHub account.
     ```bash
-    git clone [https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git](https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git)
+    git clone https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git
     ```
 
 2.  **Create a New Branch**: Before making any changes, create a new branch for your work. Use a descriptive name like `feature/your-feature-name` or `bugfix/issue-description`.
