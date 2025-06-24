@@ -23,6 +23,8 @@ class Block {
 
     set_block_props() {
         try {
+            this.block_header.timestamp = Date.now();
+
             this.block_header.merkleroot = calc_merkleroot<Transaction>(this.transactions);
             const { nonce, block_height, timestamp, difficulty, merkleroot,  prev_block_hash } = this.block_header;
 
@@ -30,7 +32,6 @@ class Block {
 
             const { n_nonce, hash } = proof_of_work(block_data_str, difficulty);
 
-            this.block_header.timestamp = Date.now();
             this.block_header.nonce = n_nonce;
             this.block_header.block_hash = hash;
         } catch (err) {
