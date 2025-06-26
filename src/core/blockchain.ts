@@ -58,8 +58,6 @@ class BlockChain {
                 this.tx_pool.push(tx);
                 return tx;
             } else {
-                this.addr_nonce.set(sender, prev_nonce + 1);
-
                 if(amount < 0) {
                     throw new Error("Invalid amount");
                 }
@@ -68,9 +66,7 @@ class BlockChain {
                     throw new Error("Insufficient fund");
                 }
 
-                const sender_nonce = this.addr_nonce.get(sender) ?? 0;
-
-                if (nonce !== sender_nonce) {
+                if (nonce !== prev_nonce + 1) {
                     throw new Error("Invalid nonce value");
                 }
 
@@ -79,6 +75,7 @@ class BlockChain {
                 }
                 
                 this.tx_pool.push(tx);
+                this.addr_nonce.set(sender, prev_nonce + 1);
                 this.addr_bal.set(sender, sender_bal - amount);
             }
 

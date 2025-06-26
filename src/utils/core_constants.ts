@@ -1,10 +1,10 @@
-const BLOCK_TIME_DIFF: number = 500;
+const BLOCK_TIME_DIFF: number = 100; // in milliseconds, 100ms = 0.1 seconds
 const BLOCK_REWARD: number = 32;
 const BC_NAME: string = "0xByteChain";
 const BC_NAME_PUB: string = "0xByteChainPublicKey";
 const GEN_PREV_HASH: string = "0x00000000000000000000000000000000ByteChain";
 
-const MIN_DIFFICULTY = 4;
+const MIN_DIFFICULTY = 3;
 const MAX_DIFFICULTY = 10;
 
 const BLOCK_WINDOW = 4;
