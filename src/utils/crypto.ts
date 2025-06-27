@@ -13,7 +13,7 @@ function hash_tobuf(data_str: string): Buffer {
         throw new TypeError('Data must be a string.');
     }
 
-    const hex_buffer: Buffer = Buffer.from(data_str, 'hex');
+    const hex_buffer: Buffer = Buffer.from(data_str, 'utf8');
     const hashed_transaction = hash_func(hex_buffer);
     
     return hashed_transaction;
