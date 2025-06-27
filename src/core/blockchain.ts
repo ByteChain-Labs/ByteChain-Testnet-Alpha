@@ -48,7 +48,6 @@ class BlockChain {
         try {
             const { amount, sender, recipient, nonce } = tx;
             const prev_nonce = this.addr_nonce.get(sender) ?? 0;
-            const sender_bal = this.addr_bal.get(sender) ?? 0;
 
             if (!amount || !sender || !recipient || nonce === undefined) {
                 throw new Error("Incomplete transaction detail");
@@ -58,6 +57,8 @@ class BlockChain {
                 this.tx_pool.push(tx);
                 return tx;
             } else {
+                const sender_bal = this.addr_bal.get(sender) ?? 0;
+
                 if(amount < 0) {
                     throw new Error("Invalid amount");
                 }

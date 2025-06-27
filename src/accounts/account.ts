@@ -11,7 +11,6 @@ class Account {
     private priv_key: string;
     pub_key: string;
     blockchain_addr: string;
-    private n_nonce: number;
     bc_instance: BlockChain;
 
     constructor(bc_instance: BlockChain, priv_key?: string) {
@@ -26,7 +25,6 @@ class Account {
         }
 
         this.bc_instance = bc_instance;
-        this.n_nonce = bc_instance.addr_nonce.get(this.blockchain_addr) ?? 0;
     }
 
     // Generates the public key from a private key
@@ -50,6 +48,10 @@ class Account {
         return blockchain_addr;
     }
 
+    check_nonce(): number {
+        return this.bc_instance.addr_nonce.get(this.blockchain_addr) ?? 0;
+    }
+
     check_balance(): number {
         return this.bc_instance.addr_bal.get(this.blockchain_addr) ?? 0;
     }
@@ -57,13 +59,18 @@ class Account {
     // Allow all accounts to be able to sign transaction
     acc_sign_tx(amount: number, recipient: string): Transaction {
         try {
+            const next_nonce = this.check_nonce() + 1;
+
+            if (amount < 0 || amount > this.check_balance()) {
+                throw new Error('Invalid transaction amount'); 
+            }
+
             if (amount < 0 || amount > this.check_balance()) {
                 throw new Error('Invalid transaction amount'); 
             }
             
-            const tx = new Transaction(amount, this.blockchain_addr, recipient, this.pub_key, "", this.n_nonce + 1);
+            const tx = new Transaction(amount, this.blockchain_addr, recipient, this.pub_key, "", next_nonce);
             const signed_tx = tx.sign_tx(this.priv_key);
-            this.n_nonce += 1;
             
             return signed_tx;
         } catch (err) {

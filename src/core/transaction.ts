@@ -12,7 +12,7 @@ class Transaction {
     recipient: string;
     id: string;
     private publicKey: string;
-    private signature: string;
+    signature: string;
     nonce: number;
     timestamp: number;
 
@@ -27,11 +27,16 @@ class Transaction {
         this.timestamp = Date.now();
     }
 
+    private get_signing_data(): string {
+        return `${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}`;
+    }
+
+
     verify_tx_sig(): boolean {
         try {
-            const { amount, sender, recipient, id, publicKey, signature, nonce, timestamp } = this;
+            const { amount, sender, recipient, publicKey, signature, nonce, timestamp } = this;
 
-            if (!amount || !sender || !recipient || !id || !signature || !nonce || !timestamp) {
+            if (!amount || !sender || !recipient || !signature || !nonce || !timestamp) {
                 throw new Error("Incomplete transaction data.")
             }
 
@@ -39,7 +44,7 @@ class Transaction {
                 return true;
             }
             
-            const tx_data_str = `${amount}${sender}${recipient}${id}${publicKey}${nonce}${timestamp}`;
+            const tx_data_str = this.get_signing_data();
             
             const base58_sig = signature
             const compact_sig = base58.decode(base58_sig);
@@ -57,7 +62,7 @@ class Transaction {
     }
 
     create_tx_id() {
-        const tx_data_str = JSON.stringify(this);
+        const tx_data_str = `${this.get_signing_data()}${this.signature}`;
         const id = hash_tostr(tx_data_str);
 
         this.id = id;
@@ -65,9 +70,8 @@ class Transaction {
 
     sign_tx(priv_key: string): Transaction {
         try {
-            const { amount, sender, recipient, id, publicKey, nonce, timestamp } = this;
-
-            const data_str = `${amount}${sender}${recipient}${id}${publicKey}${nonce}${timestamp}`;
+            const data_str = this.get_signing_data();
+            
             const hashed_tx = hash_tobuf(data_str);
             const key_pair = ec.keyFromPrivate(priv_key, 'hex');
             const sig = key_pair.sign(hashed_tx, 'hex');

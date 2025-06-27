@@ -4,9 +4,9 @@
   "description": "This is the first testnet of the bytechain network",
   "main": "index.js",
   "scripts": {
-    "gtest": "tsc & node ./build/gen_test",
-    "test": "tsc & node ./build/test",
-    "bcnode": "tsc & node ./build/core/node"
+    "gtest": "tsc && node ./build/gen_test",
+    "test": "tsc && node ./build/test",
+    "bcnode": "tsc && node ./build/core/node"
   },
   "keywords": [
     "BlockChain",
