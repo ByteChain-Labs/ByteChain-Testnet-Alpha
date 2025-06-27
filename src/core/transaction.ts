@@ -12,7 +12,7 @@ class Transaction {
     recipient: string;
     id: string;
     private publicKey: string;
-    signature: string;
+    private signature: string;
     nonce: number;
     timestamp: number;
 
