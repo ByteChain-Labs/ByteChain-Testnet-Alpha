@@ -1,8 +1,9 @@
-import { hash_tobuf, hash_tostr } from "../utils/crypto";
 import base58 from "bs58";
-import { ec as EC } from 'elliptic';
-import { BC_NAME } from "../utils/core_constants";
+import elliptic_pkg from 'elliptic';
+import { BC_NAME } from "../utils/core_constants.js";
+import { hash_tobuf, hash_tostr } from "../utils/crypto.js";
 
+const  { ec: EC } = elliptic_pkg;
 const ec = new EC('secp256k1');
 
 
@@ -13,7 +14,7 @@ class Transaction {
     id: string;
     private publicKey: string;
     private signature: string;
-    nonce: number;
+    private nonce: number;
     timestamp: number;
 
     constructor(amount: number, sender: string, recipient: string, publicKey: string, signature: string, nonce: number) {
@@ -31,6 +32,9 @@ class Transaction {
         return `${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}`;
     }
 
+    get_tx_nonce(): number {
+        return this.nonce;
+    }
 
     verify_tx_sig(): boolean {
         try {

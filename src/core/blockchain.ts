@@ -3,9 +3,9 @@ import {
     MIN_DIFFICULTY, MAX_DIFFICULTY,
     BLOCK_WINDOW, GEN_PREV_HASH,
     BC_NAME, BC_NAME_PUB,
-} from "../utils/core_constants";
-import Transaction from "./transaction";
-import Block from "./block";
+} from "../utils/core_constants.js";
+import Transaction from "./transaction.js";
+import Block from "./block.js";
 
 
 class BlockChain {
@@ -46,8 +46,8 @@ class BlockChain {
 
     add_new_tx(tx: Transaction): Transaction {
         try {
-            const { amount, sender, recipient, nonce } = tx;
-            const prev_nonce = this.addr_nonce.get(sender) ?? 0;
+            const { amount, sender, recipient } = tx;
+            const nonce = tx.get_tx_nonce();
 
             if (!amount || !sender || !recipient || nonce === undefined) {
                 throw new Error("Incomplete transaction detail");
@@ -57,6 +57,7 @@ class BlockChain {
                 this.tx_pool.push(tx);
                 return tx;
             } else {
+                const prev_nonce = this.addr_nonce.get(sender) ?? 0;
                 const sender_bal = this.addr_bal.get(sender) ?? 0;
 
                 if(amount < 0) {
