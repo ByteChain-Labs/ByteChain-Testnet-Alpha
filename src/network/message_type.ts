@@ -1,6 +1,6 @@
-import Transaction from "../core/transaction"
-import Block from "../core/block"
-import BlockChain from "../core/blockchain"
+import Transaction from "../core/transaction.js";
+import Block from "../core/block.js";
+import BlockChain from "../core/blockchain.js";
 
 
 type BaseMessage = {

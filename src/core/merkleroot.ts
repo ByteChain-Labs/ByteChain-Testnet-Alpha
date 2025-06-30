@@ -1,4 +1,4 @@
-import { hash_tostr } from "../utils/crypto";
+import { hash_tostr } from "../utils/crypto.js";
 
 function convert_tostr<T>(data: T): string {
     return typeof data === "object" ? JSON.stringify(data) : String(data);

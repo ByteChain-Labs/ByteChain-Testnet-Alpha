@@ -1,6 +1,6 @@
-import Account from "./accounts/account";
-import BlockChain from "./core/blockchain";
-import { print } from "./utils/core_constants";
+import Account from "./accounts/account.js";
+import BlockChain from "./core/blockchain.js";
+import { print } from "./utils/core_constants.js";
 
 
 const bytechain = new BlockChain();
@@ -15,18 +15,17 @@ bytechain.addr_bal.set(account2.blockchain_addr, 5000000000000);
 function account_tx() {
     const tx = account2.acc_sign_tx(Math.random()*10, account1.blockchain_addr);
     bytechain.add_new_tx(tx);
-    print(`Transaction created: ${tx.id} from ${tx.sender} to ${tx.recipient} of amount ${tx.amount}`);
-
-    return tx;
 }
 
 
 setInterval(() => {
     account_tx();
-}, 150);
+}, Math.random()*300);
 
 
 setInterval(() => {
     bytechain.mine_block(account1.blockchain_addr);
-    print(`New block mined: Height: ${bytechain.chain.length}, Hash: ${bytechain.chain[bytechain.chain.length - 1].block_header.block_hash}`);
-}, 450)
+    const { block_header, transactions } = bytechain.chain[bytechain.chain.length - 1];
+    
+    print(`New block mined: Height: ${block_header.block_height}, Hash: ${block_header.block_hash}(${transactions.length} tx)`);
+}, Math.random()*1500)
