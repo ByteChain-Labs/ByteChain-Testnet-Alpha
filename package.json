@@ -1,8 +1,8 @@
 {
   "name": "bytechain-testnet-alpha",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "This is the first testnet of the bytechain network",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
     "gtest": "tsc && node ./build/gen_test",
     "test": "tsc && node ./build/test",
@@ -22,11 +22,8 @@
     "@types/bs58": "^4.0.4",
     "@types/elliptic": "^6.4.18",
     "@types/node": "^22.10.7",
-    "@types/ws": "^8.5.14",
     "bs58": "^6.0.0",
-    "elliptic": "^6.6.0",
-    "firebase": "^11.3.1",
-    "ws": "^8.18.0"
+    "elliptic": "^6.6.0"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

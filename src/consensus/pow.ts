@@ -1,4 +1,4 @@
-import { hash_tostr } from '../utils/crypto';
+import { hash_tostr } from '../utils/crypto.js';
 
 function proof_of_work(block_data_str: string, mining_difficulty: number): { hash: string, n_nonce: number } {
     try {

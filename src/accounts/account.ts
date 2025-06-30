@@ -1,9 +1,10 @@
 import crypto from 'crypto';
-import { ec as EC } from 'elliptic';
+import elliptic_pkg from 'elliptic';
 import base58 from 'bs58';
-import BlockChain from '../core/blockchain';
-import Transaction from '../core/transaction';
+import BlockChain from '../core/blockchain.js';
+import Transaction from '../core/transaction.js';
 
+const { ec: EC } = elliptic_pkg;
 const ec = new EC('secp256k1');
 
 
@@ -60,10 +61,6 @@ class Account {
     acc_sign_tx(amount: number, recipient: string): Transaction {
         try {
             const next_nonce = this.check_nonce() + 1;
-
-            if (amount < 0 || amount > this.check_balance()) {
-                throw new Error('Invalid transaction amount'); 
-            }
 
             if (amount < 0 || amount > this.check_balance()) {
                 throw new Error('Invalid transaction amount'); 
