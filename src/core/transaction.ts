@@ -1,55 +1,105 @@
 import base58 from "bs58";
 import elliptic_pkg from 'elliptic';
-import { BC_NAME } from "../utils/core_constants.js";
+import { BC_NAME, Tx_Type } from "../utils/core_constants.js";
 import { hash_tobuf, hash_tostr } from "../utils/crypto.js";
+
 
 const  { ec: EC } = elliptic_pkg;
 const ec = new EC('secp256k1');
 
 
 class Transaction {
+    type: Tx_Type;
     amount: number;
     sender: string;
     recipient: string;
-    id: string;
-    private publicKey: string;
-    private signature: string;
-    private nonce: number;
+    bytecode?: string; 
+    contract_addr?: string;
+    signature: string;
+    nonce: number;
     timestamp: number;
+    private publicKey: string;
 
-    constructor(amount: number, sender: string, recipient: string, publicKey: string, signature: string, nonce: number) {
-        this.amount = amount;
-        this.sender = sender;
-        this.recipient = recipient;
-        this.id = "";
-        this.publicKey = publicKey;
-        this.signature = signature;
-        this.nonce = nonce;
-        this.timestamp = Date.now();
+    constructor(
+        amount: number,
+        sender: string,
+        recipient: string,
+        type: Tx_Type,
+        publicKey: string,
+        signature: string,
+        nonce: number,
+        bytecode?: string,
+        contract_addr?: string
+    ) {
+        this.type = type;
+
+        if (this.type === Tx_Type.BYTE_TX) {
+            this.amount = amount;
+            this.sender = sender;
+            this.recipient = recipient;
+            this.publicKey = publicKey;
+            this.signature = signature;
+            this.nonce = nonce;
+            this.timestamp = Date.now();
+        } else if ((bytecode || contract_addr) !== undefined || this.type === Tx_Type.CONTRACT) {
+            this.amount = amount;
+            this.sender = sender;
+            this.recipient = recipient;
+            this.publicKey = publicKey;
+            this.contract_addr = contract_addr;
+            this.bytecode = bytecode;
+            this.signature = signature;
+            this.nonce = nonce;
+            this.timestamp = Date.now();
+        } else if (contract_addr !== undefined || this.type === Tx_Type.CONTRACT_CALL) {
+            this.amount = amount;
+            this.sender = sender;
+            this.recipient = recipient;
+            this.contract_addr = contract_addr;
+            this.publicKey = publicKey;
+            this.signature = signature;
+            this.nonce = nonce;
+            this.timestamp = Date.now();
+        } else {
+            throw new Error('Unknown transaction type');
+        }
     }
 
     private get_signing_data(): string {
-        return `${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}`;
+        if (this.type === Tx_Type.BYTE_TX) {
+            return `${this.type}${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}`;
+        } else if ((this.bytecode || this.contract_addr) !== undefined || this.type === Tx_Type.CONTRACT) {
+            return `${this.type}${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}${this.bytecode}${this.contract_addr}`;
+        } else if (this.contract_addr !== undefined || this.type === Tx_Type.CONTRACT_CALL) {
+            return `${this.type}${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}${this.contract_addr}`;
+        }
+        
+        throw new Error('Unknown transaction type');
     }
 
     get_tx_nonce(): number {
         return this.nonce;
     }
 
+    compute_contract_addr() {
+        const c_addr = hash_tostr(this.get_signing_data());
+        this.contract_addr = c_addr;
+    }
+
     verify_tx_sig(): boolean {
+        const { amount, sender, recipient, publicKey, signature, nonce, timestamp } = this;
+
+        if (!amount || !sender || !recipient || !signature || !nonce || !timestamp) {
+            throw new Error("Incomplete transaction data.")
+        }
+
+        if (sender === BC_NAME) {
+            return true;
+        }
+        
         try {
-            const { amount, sender, recipient, publicKey, signature, nonce, timestamp } = this;
-
-            if (!amount || !sender || !recipient || !signature || !nonce || !timestamp) {
-                throw new Error("Incomplete transaction data.")
-            }
-
-            if (sender === BC_NAME) {
-                return true;
-            }
-            
             const tx_data_str = this.get_signing_data();
-            
+        
             const base58_sig = signature
             const compact_sig = base58.decode(base58_sig);
 
@@ -61,15 +111,8 @@ class Transaction {
             
             return key.verify(hashed_tx, tx_signature);
         } catch (err) {
-            throw new Error('Unable to verify transaction signature');
+            throw new Error('Transaction signature verification failed');
         }
-    }
-
-    create_tx_id() {
-        const tx_data_str = `${this.get_signing_data()}${this.signature}`;
-        const id = hash_tostr(tx_data_str);
-
-        this.id = id;
     }
 
     sign_tx(priv_key: string): Transaction {
@@ -85,7 +128,6 @@ class Transaction {
             const sign = base58.encode(compact_sig);
 
             this.signature = sign;
-            this.create_tx_id();
 
             return this;
         } catch (err) {
@@ -97,7 +139,7 @@ class Transaction {
     is_valid_tx(): boolean {
         try {
             const currentTime = Date.now();
-            const MAX_TIME_DIFF = 300000; // 5 minutes in milliseconds
+            const MAX_TIME_DIFF = 300000;
 
             if (Math.abs(currentTime - this.timestamp) > MAX_TIME_DIFF) {
                 throw new Error('Transaction timestamp is too old or in future');

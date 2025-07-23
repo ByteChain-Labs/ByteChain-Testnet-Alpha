@@ -1,13 +1,13 @@
 import crypto from 'crypto';
 
-// Take a buffer as input an return a buffer as output
+// Take a buffer as input and returns a buffer as output
 function hash_func(data_buf: Buffer): Buffer {
     const hashed_data = crypto.createHash('sha256').update(data_buf).digest();
 
     return hashed_data;
 }
 
-// Take a str as input an return a buffer as output
+// Take a str as input and returns a buffer as output
 function hash_tobuf(data_str: string): Buffer {
     if (typeof data_str !== 'string') {
         throw new TypeError('Data must be a string.');
@@ -19,7 +19,7 @@ function hash_tobuf(data_str: string): Buffer {
     return hashed_transaction;
 }
 
-// Take a str as input an return a str as output
+// Take a str as input and returns a str as output
 function hash_tostr(data_str: string): string {
     if (typeof data_str !== 'string') {
         throw new TypeError('Data must be a string.');
