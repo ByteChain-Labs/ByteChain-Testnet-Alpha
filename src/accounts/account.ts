@@ -3,6 +3,7 @@ import elliptic_pkg from 'elliptic';
 import base58 from 'bs58';
 import BlockChain from '../core/blockchain.js';
 import Transaction from '../core/transaction.js';
+import { GEN_CONTRACT_RECIPIENT, Tx_Type } from '../utils/core_constants.js';
 
 const { ec: EC } = elliptic_pkg;
 const ec = new EC('secp256k1');
@@ -58,20 +59,41 @@ class Account {
     }
 
     // Allow all accounts to be able to sign transaction
-    acc_sign_tx(amount: number, recipient: string): Transaction {
+    acc_sign_byte_tx(amount: number, recipient: string): Transaction {
         try {
             const next_nonce = this.check_nonce() + 1;
-
-            if (amount < 0 || amount > this.check_balance()) {
-                throw new Error('Invalid transaction amount'); 
-            }
-            
-            const tx = new Transaction(amount, this.blockchain_addr, recipient, this.pub_key, "", next_nonce);
+            const tx = new Transaction(amount, this.blockchain_addr, recipient, Tx_Type.BYTE_TX, this.pub_key, "", next_nonce);
             const signed_tx = tx.sign_tx(this.priv_key);
-            
+        
             return signed_tx;
         } catch (err) {
             throw new Error('Unable to sign transaction from account class');
+        }
+    }
+
+    acc_sign_contract(bytecode: string): Transaction {
+        try {
+            const next_nonce = this.check_nonce() + 1;
+            const tx = new Transaction(1, this.blockchain_addr, GEN_CONTRACT_RECIPIENT, Tx_Type.CONTRACT, this.pub_key, "", next_nonce, bytecode);
+            tx.compute_contract_addr();
+            const signed_tx = tx.sign_tx(this.priv_key);
+        
+            return signed_tx;
+        } catch (err) {
+            throw new Error(`Unable to sign contract transaction: ${err}`);
+        }
+    }
+
+    acc_sign_contract_call(contract_addr: string,): Transaction {
+        try {
+            const next_nonce = this.check_nonce() + 1;
+            const tx = new Transaction(1, this.blockchain_addr, GEN_CONTRACT_RECIPIENT, Tx_Type.CONTRACT_CALL, this.pub_key, "", next_nonce);
+            tx.contract_addr = contract_addr;
+            const signed_tx = tx.sign_tx(this.priv_key);
+        
+            return signed_tx;
+        } catch (err) {
+            throw new Error(`Unable to sign contract call transaction: ${err}`);
         }
     }
 }
