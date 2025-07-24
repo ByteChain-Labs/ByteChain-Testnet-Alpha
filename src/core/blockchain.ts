@@ -59,7 +59,7 @@ class BlockChain {
         const nonce = tx.get_tx_nonce();
      
         if (!type || amount === undefined || !sender || !recipient || nonce === undefined) {
-            console.error('Transaction data is incomplete')
+            throw new Error('Transaction data is incomplete')
         }
 
         try {
@@ -72,19 +72,19 @@ class BlockChain {
                     const sender_bal = this.addr_bal.get(sender) ?? 0;
 
                     if(amount < 0) {
-                        console.error("Invalid amount");
+                        throw new Error("Invalid amount");
                     }
 
                     if (amount > sender_bal) {
-                        console.error("Insufficient fund");
+                        throw new Error("Insufficient fund");
                     }
 
                     if (nonce !== prev_nonce + 1) {
-                        console.error("Invalid nonce value");
+                        throw new Error("Invalid nonce value");
                     }
 
                     if (!tx.verify_tx_sig()) {
-                        console.error("Invalid Transaction");
+                        throw new Error("Invalid Transaction");
                     }
                     
                     this.tx_pool.push(tx);
@@ -93,17 +93,17 @@ class BlockChain {
                 }
             } else if (type === Tx_Type.CONTRACT) {
                 if (bytecode === undefined || contract_addr === undefined) {
-                    console.error("Incomplete transaction detail");
+                    throw new Error("Incomplete transaction detail");
                 }
 
                 const prev_nonce = this.addr_nonce.get(sender) ?? 0;
 
                 if (nonce !== prev_nonce + 1) {
-                    console.error("Invalid nonce value");
+                    throw new Error("Invalid nonce value");
                 }
 
                 if (!tx.verify_tx_sig()) {
-                    console.error("Invalid Transaction");
+                    throw new Error("Invalid Transaction");
                 }
 
                 const bc = bytecode ?? '';
@@ -118,17 +118,17 @@ class BlockChain {
                 this.contract_pool.set(contract_addr ?? '', new_contract)
             } else if (type === Tx_Type.CONTRACT_CALL) {
                 if (nonce === undefined || contract_addr === undefined) {
-                    console.error("Incomplete transaction detail");
+                    throw new Error("Incomplete transaction detail");
                 }
 
                 const prev_nonce = this.addr_nonce.get(sender) ?? 0;
 
                 if (nonce !== prev_nonce + 1) {
-                    console.error("Invalid nonce value");
+                    throw new Error("Invalid nonce value");
                 }
 
                 if (!tx.verify_tx_sig()) {
-                    console.error("Invalid Transaction");
+                    throw new Error("Invalid Transaction");
                 }
                 
                 this.tx_pool.push(tx);
