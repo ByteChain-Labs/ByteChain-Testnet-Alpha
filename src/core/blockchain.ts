@@ -58,7 +58,7 @@ class BlockChain {
         const { type, amount, sender, recipient, bytecode,contract_addr } = tx;
         const nonce = tx.get_tx_nonce();
      
-        if (!type || !amount || !sender || !recipient || nonce === undefined) {
+        if (!type || amount === undefined || !sender || !recipient || nonce === undefined) {
             console.error('Transaction data is incomplete')
         }
 
