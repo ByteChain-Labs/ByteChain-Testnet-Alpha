@@ -159,11 +159,11 @@ class BlockChain {
                 } else if (type === Tx_Type.CONTRACT_CALL) {
                     const contract = this.contract_pool.get(contract_addr ?? '');
                     const bc = contract?.bytecode;
-                    const contract_json = JSON.parse(bc ?? '');
-                    const { bytecode, constantPool } = contract_json;
+                    const contract_obj = JSON.parse(bc ?? '');
+                    const { bytecode, constantPool } = contract_obj;
 
                     const vm = new GyroVM(bytecode, constantPool);
-                    print(vm.run());
+                    vm.run();
                 } else {
                     throw new Error('Amount is possibly undefined');
                 }

@@ -1,6 +1,7 @@
 import Account from "./accounts/account.js";
 import BlockChain from "./core/blockchain.js";
 import { print } from "./utils/core_constants.js";
+import { GyroVM } from "./vm/gyro-vm.js";
 
 
 const bytechain = new BlockChain();
@@ -13,7 +14,7 @@ bytechain.addr_bal.set(account1.blockchain_addr, 5);
 bytechain.addr_bal.set(account2.blockchain_addr, 5000000000000);
 
 // This is the bytecode format for a language called gyro
-const bytecode = `
+const bc = `
 {
   "bytecode": [
     1, 0,
@@ -25,7 +26,7 @@ const bytecode = `
     82
   ],
   "constantPool": [
-    "Hello, Gyro Hacker \nHappy Hacking"
+    "Hello, Gyro Hacker"
   ]
 }
 `;
@@ -36,15 +37,25 @@ function account_tx() {
 }
 
 function account_tx_contract() {
-    const tx_contract = account2.acc_sign_contract(bytecode)
+    const tx_contract = account2.acc_sign_contract(bc)
+    bytechain.add_new_tx(tx_contract);
+    return tx_contract.contract_addr ?? '';
+}
+
+function account_tx_contract_call(c_addr: string) {
+    const tx_contract = account2.acc_sign_contract_call(c_addr)
     bytechain.add_new_tx(tx_contract);
 }
 
+const c_addr = account_tx_contract();
 
 setInterval(() => {
     account_tx();
-    account_tx_contract();
 }, 1000);
+
+setInterval(() => {
+    account_tx_contract_call(c_addr);
+}, 5000);
 
 
 setInterval(() => {
