@@ -2,9 +2,7 @@ import {
     BLOCK_REWARD, BLOCK_TIME_DIFF,
     MIN_DIFFICULTY, MAX_DIFFICULTY,
     BLOCK_WINDOW, GEN_PREV_HASH,
-    BC_NAME, BC_NAME_PUB,
-    Tx_Type,
-    print,
+    BC_NAME, BC_NAME_PUB, Tx_Type
 } from "../utils/core_constants.js";
 import Transaction from "./transaction.js";
 import Block from "./block.js";
@@ -35,7 +33,7 @@ class BlockChain {
 
     genesis_block() {
         const genesis_recipient = "2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs";
-        const tx = new Transaction(1000000000, BC_NAME, genesis_recipient, Tx_Type.BYTE_TX, BC_NAME_PUB, "", 0)
+        const tx = new Transaction(1000000000, BC_NAME, genesis_recipient, Tx_Type.BYTE_TX, Date.now(), BC_NAME_PUB, "", 0)
         this.tx_pool.push(tx);
 
         const txs = this.tx_pool;
@@ -179,7 +177,7 @@ class BlockChain {
 
     mine_block(miner_addr: string): Block {
         try {
-            const reward_tx = new Transaction(BLOCK_REWARD, BC_NAME, miner_addr, Tx_Type.BYTE_TX, BC_NAME_PUB, "", 0);
+            const reward_tx = new Transaction(BLOCK_REWARD, BC_NAME, miner_addr, Tx_Type.BYTE_TX, Date.now(), BC_NAME_PUB, "", 0);
 
             this.add_new_tx(reward_tx);
 
