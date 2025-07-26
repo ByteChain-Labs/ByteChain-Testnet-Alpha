@@ -18,48 +18,35 @@ class Transaction {
     signature: string;
     nonce: number;
     timestamp: number;
-    private publicKey: string;
+    publicKey: string;
 
     constructor(
         amount: number,
         sender: string,
         recipient: string,
         type: Tx_Type,
+        timestamp: number,
         publicKey: string,
         signature: string,
         nonce: number,
         bytecode?: string,
         contract_addr?: string
     ) {
+        this.amount = amount;
+        this.sender = sender;
+        this.recipient = recipient;
         this.type = type;
+        this.timestamp = timestamp;
+        this.publicKey = publicKey;
+        this.signature = signature;
+        this.nonce = nonce;
 
         if (this.type === Tx_Type.BYTE_TX) {
-            this.amount = amount;
-            this.sender = sender;
-            this.recipient = recipient;
-            this.publicKey = publicKey;
-            this.signature = signature;
-            this.nonce = nonce;
-            this.timestamp = Date.now();
-        } else if ((bytecode || contract_addr) !== undefined || this.type === Tx_Type.CONTRACT) {
-            this.amount = amount;
-            this.sender = sender;
-            this.recipient = recipient;
-            this.publicKey = publicKey;
+        } else if (this.type === Tx_Type.CONTRACT || (bytecode || contract_addr) !== undefined) {
             this.contract_addr = contract_addr;
             this.bytecode = bytecode;
-            this.signature = signature;
-            this.nonce = nonce;
-            this.timestamp = Date.now();
-        } else if (contract_addr !== undefined || this.type === Tx_Type.CONTRACT_CALL) {
-            this.amount = amount;
-            this.sender = sender;
-            this.recipient = recipient;
+        } else if (this.type === Tx_Type.CONTRACT_CALL || contract_addr !== undefined) {
             this.contract_addr = contract_addr;
-            this.publicKey = publicKey;
-            this.signature = signature;
-            this.nonce = nonce;
-            this.timestamp = Date.now();
         } else {
             throw new Error('Unknown transaction type');
         }
