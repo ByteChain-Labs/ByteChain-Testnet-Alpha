@@ -32,17 +32,18 @@ class BlockChain {
     }
 
     genesis_block() {
-        const genesis_recipient = "2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs";
-        const tx = new Transaction(1000000000, BC_NAME, genesis_recipient, Tx_Type.BYTE_TX, Date.now(), BC_NAME_PUB, "", 0)
+        const gen_amount = 1000000000;
+        const gen_recipient = "2K2NFr5cFUfksGENqtZyx4BdgRvGWq97JAs";
+        const tx = new Transaction(gen_amount, BC_NAME, gen_recipient, Tx_Type.BYTE_TX, Date.now(), BC_NAME_PUB, "", 0)
         this.tx_pool.push(tx);
-
         const txs = this.tx_pool;
-        this.tx_pool = [];
-
         const new_block = new Block(0, MIN_DIFFICULTY, GEN_PREV_HASH, txs);
+        const recipient_bal = this.addr_bal.get(gen_recipient) ?? 0;
+        this.addr_bal.set(gen_recipient, recipient_bal + gen_amount);
         new_block.set_block_props();
 
         this.chain.push(new_block);
+        this.tx_pool = [];
         this.difficulty = this.calc_difficulty();
     }
 
@@ -135,7 +136,7 @@ class BlockChain {
 
             return tx;
         } catch (err) {
-            throw new Error("Error adding transaction to tx_pool");
+            throw new Error(`Error adding transaction to tx_pool: ${(err instanceof Error) ? err.message : err}`);
         }
     }
 
@@ -151,7 +152,7 @@ class BlockChain {
                 
                 if (type === Tx_Type.BYTE_TX) {
                     const recipient_bal = this.addr_bal.get(recipient) ?? 0;
-                    this.addr_bal.set(recipient, recipient_bal + amount)
+                    this.addr_bal.set(recipient, recipient_bal + amount);
                 } else if (type === Tx_Type.CONTRACT) {
                     continue;
                 } else if (type === Tx_Type.CONTRACT_CALL) {

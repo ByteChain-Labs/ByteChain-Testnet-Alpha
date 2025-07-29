@@ -1,19 +1,36 @@
-// import Account from "./accounts/account.js";
-// import BlockChain from "./core/blockchain.js";
-// import P2PNode from "./network/p2p.js";
-// import { print } from "./utils/core_constants.js";
 import BCNode from "./core/node.js";
+import { print } from "./utils/core_constants.js";
+import BlockChain from "./core/blockchain.js";
+import Account from "./accounts/account.js";
+
+const node_port = parseInt(process.env.PORT || '4001');
+
+const bc = new BlockChain();
+const acc = new Account(bc);
+bc.addr_bal.set('2JizpLuTntH4WwtdfX65P4mUHc9eDCpwRpL', 1000000)
+
+const bc_node = new BCNode(node_port, 3001);
+
+async function main() {
+    bc_node.start();
+
+    setInterval(() => {
+        bc_node.pubBlock()
+    }, 5000);
+}
+
+main().catch(err => {
+    console.error(`Failed to start ByteChain Node: ${err}`)
+    process.exit(1);
+});
 
 
-// const bytechain = new BlockChain();
+process.on('SIGINT', async () => {
+    print('SIGINT received, stopping node...');
+    await bc_node.stop();
+    process.exit(0);
+});
 
-const bc_node = new BCNode(4001);
-
-bc_node.start();
-
-setInterval(() => {
-    bc_node.pubBlock()
-}, 2000);
 
 // const account1 = new Account(bytechain);
 // const account2 = new Account(bytechain);

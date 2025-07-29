@@ -21,16 +21,20 @@ class Block {
         this.transactions = transactions;
     }
 
+    get_base_hash_input(): string {
+        const { block_height, timestamp, difficulty, merkleroot,  prev_block_hash } = this.block_header;
+        return `${block_height}${timestamp}${difficulty}${merkleroot}${prev_block_hash}${this.transactions}`;
+    }
+
     set_block_props() {
         try {
             this.block_header.timestamp = Date.now();
 
             this.block_header.merkleroot = calc_merkleroot<Transaction>(this.transactions);
-            const { nonce, block_height, timestamp, difficulty, merkleroot,  prev_block_hash } = this.block_header;
 
-            const block_data_str = `${nonce}${block_height}${timestamp}${difficulty}${merkleroot}${prev_block_hash}${this.transactions}`;
+            const block_data_str = this.get_base_hash_input()
 
-            const { n_nonce, hash } = proof_of_work(block_data_str, difficulty);
+            const { n_nonce, hash } = proof_of_work(block_data_str, this.block_header.difficulty);
 
             this.block_header.nonce = n_nonce;
             this.block_header.block_hash = hash;
