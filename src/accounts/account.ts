@@ -29,6 +29,13 @@ class Account {
         this.bc_instance = bc_instance;
     }
 
+    static new(): { priv_key: string, pub_key: string, blockchain_addr: string} {
+        const priv_key = ec.genKeyPair().getPrivate('hex');
+        const pub_key = Account.create_pub_key(priv_key);
+        const blockchain_addr = Account.create_blockchain_addr(pub_key);
+        return { priv_key, pub_key, blockchain_addr };
+    }
+
     // Generates the public key from a private key
     static create_pub_key(priv_key: string): string {
         const key_pair = ec.keyFromPrivate(priv_key);

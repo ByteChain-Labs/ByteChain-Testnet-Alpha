@@ -66,8 +66,6 @@ class P2PNode {
         });
 
         await this.node.start();
-        print(`ByteChain P2P Node started with Peer ID: ${this.node.peerId.toString()}`);
-        print('Listening on:', this.node.getMultiaddrs().map((ma: any) => ma.toString()));
     }
 
     async stop() {

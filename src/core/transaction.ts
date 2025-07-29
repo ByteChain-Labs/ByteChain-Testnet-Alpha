@@ -74,14 +74,14 @@ class Transaction {
     }
 
     verify_tx_sig(): boolean {
+        if (this.sender === BC_NAME) {
+            return true;
+        }
+
         const { amount, sender, recipient, publicKey, signature, nonce, timestamp } = this;
 
         if (amount === undefined || !sender || !recipient || !signature || nonce === undefined || timestamp === undefined) {
             throw new Error("Incomplete transaction data.")
-        }
-
-        if (sender === BC_NAME) {
-            return true;
         }
         
         try {
