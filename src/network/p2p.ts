@@ -12,7 +12,7 @@ import BlockChain from '../core/blockchain.js';
 import Block from '../core/block.js';
 import Transaction from '../core/transaction.js';
 
-import { serializeTransaction, deserializeTransaction, serializeBlock, deserializeBlock } from '../utils/serialization.js';
+import { serialize_tx, deserialize_tx, serialize_block, deserialize_block } from '../utils/serialization.js';
 import { print } from '../utils/core_constants.js';
 
 
@@ -93,7 +93,7 @@ class P2PNode {
                 case 'bytechain:transactions':
                     print(`Received new transaction from peer on topic ${topic}`);
                     try {
-                        const receivedTx = deserializeTransaction(message);
+                        const receivedTx = deserialize_tx(message);
                         const addResult = this.blockchain.add_new_tx(receivedTx);
                         if (addResult) {
                              print("Peer transaction added to pool.");
@@ -107,7 +107,7 @@ class P2PNode {
                 case 'bytechain:blocks':
                     print(`Received new block from peer on topic ${topic}`);
                     try {
-                        const receivedBlock = deserializeBlock(message);
+                        const receivedBlock = deserialize_block(message);
                         print(`Received block height: ${receivedBlock.block_header.block_height}, hash: ${receivedBlock.block_header.block_hash}`);
                     } catch (error: any) {
                         console.error('Error deserializing or processing received block:', error.message);
@@ -120,14 +120,14 @@ class P2PNode {
     }
 
     async publishTransaction(tx: Transaction) {
-        const serializedTx = serializeTransaction(tx);
+        const serializedTx = serialize_tx(tx);
         const jsonString = JSON.stringify(serializedTx);
         await this.node.services.pubsub.publish('bytechain:transactions', new TextEncoder().encode(jsonString));
         print('Published new transaction to network.');
     }
 
     async publishBlock(block: Block) {
-        const serializedBlock = serializeBlock(block);
+        const serializedBlock = serialize_block(block);
         const jsonString = JSON.stringify(serializedBlock);
         await this.node.services.pubsub.publish('bytechain:blocks', new TextEncoder().encode(jsonString));
         print(`Published new block to network: Height: ${block.block_header.block_height}, Block Hash: ${block.block_header.block_hash}`);

@@ -65,11 +65,11 @@ class Account {
         return this.bc_instance.addr_bal.get(this.blockchain_addr) ?? 0;
     }
 
-    // Allow all accounts to be able to sign transaction
     acc_sign_byte_tx(amount: number, recipient: string): Transaction {
         try {
             const next_nonce = this.check_nonce() + 1;
             const tx = new Transaction(amount, this.blockchain_addr, recipient, Tx_Type.BYTE_TX, Date.now(), this.pub_key, "", next_nonce);
+            tx.compute_tx_id();
             const signed_tx = tx.sign_tx(this.priv_key);
         
             return signed_tx;
@@ -82,6 +82,7 @@ class Account {
         try {
             const next_nonce = this.check_nonce() + 1;
             const tx = new Transaction(0, this.blockchain_addr, GEN_CONTRACT_RECIPIENT, Tx_Type.CONTRACT, Date.now(), this.pub_key, "", next_nonce, bytecode);
+            tx.compute_tx_id();
             tx.compute_contract_addr();
             const signed_tx = tx.sign_tx(this.priv_key);
         
@@ -96,6 +97,7 @@ class Account {
             const next_nonce = this.check_nonce() + 1;
             const tx = new Transaction(0, this.blockchain_addr, GEN_CONTRACT_RECIPIENT, Tx_Type.CONTRACT_CALL, Date.now(), this.pub_key, "", next_nonce);
             tx.contract_addr = contract_addr;
+            tx.compute_tx_id();
             const signed_tx = tx.sign_tx(this.priv_key);
         
             return signed_tx;

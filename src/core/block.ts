@@ -26,7 +26,7 @@ class Block {
         return `${block_height}${timestamp}${difficulty}${merkleroot}${prev_block_hash}${this.transactions}`;
     }
 
-    set_block_props() {
+    set_block_props(): { n_nonce: number, hash: string } {
         try {
             this.block_header.timestamp = Date.now();
 
@@ -38,6 +38,8 @@ class Block {
 
             this.block_header.nonce = n_nonce;
             this.block_header.block_hash = hash;
+
+            return { n_nonce, hash };
         } catch (err) {
             throw new Error('Unable to set block property')            
         }

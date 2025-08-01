@@ -10,7 +10,7 @@ import { Tx_Type } from './core_constants.js'
  * @param tx The Transaction object to serialize.
  * @returns A plain object representation of the transaction, or a JSON string.
  */
-export function serializeTransaction(tx: Transaction): Record<string, any> {
+function serialize_tx(tx: Transaction): Record<string, any> {
     const obj: Record<string, any> = {
         type: tx.type,
         amount: tx.amount,
@@ -39,8 +39,7 @@ export function serializeTransaction(tx: Transaction): Record<string, any> {
  * @returns A new Transaction instance.
  * @throws Error if essential transaction data is missing or invalid.
  */
-export function deserializeTransaction(data: Record<string, any>): Transaction {
-    // Basic validation for essential properties
+function deserialize_tx(data: Record<string, any>): Transaction {
     if (
         data.type === undefined ||
         data.amount === undefined ||
@@ -81,7 +80,7 @@ export function deserializeTransaction(data: Record<string, any>): Transaction {
  * @param block The Block object to serialize.
  * @returns A plain object representation of the block.
  */
-export function serializeBlock(block: Block): Record<string, any> {
+function serialize_block(block: Block): Record<string, any> {
     return {
         block_header: {
             block_height: block.block_header.block_height,
@@ -92,7 +91,7 @@ export function serializeBlock(block: Block): Record<string, any> {
             block_hash: block.block_header.block_hash,
             merkle_root: block.block_header.merkleroot,
         },
-        transactions: block.transactions.map(tx => serializeTransaction(tx)),
+        transactions: block.transactions.map(tx => serialize_tx(tx)),
     };
 }
 
@@ -104,7 +103,7 @@ export function serializeBlock(block: Block): Record<string, any> {
  * @returns A new Block instance.
  * @throws Error if essential block data is missing or invalid.
  */
-export function deserializeBlock(data: Record<string, any>): Block {
+function deserialize_block(data: Record<string, any>): Block {
     if (!data.block_header ||
         data.block_header.block_height === undefined ||
         data.block_header.difficulty === undefined ||
@@ -119,7 +118,7 @@ export function deserializeBlock(data: Record<string, any>): Block {
     }
 
     const deserializedTransactions = data.transactions.map((tx_data: Record<string, any>) =>
-        deserializeTransaction(tx_data)
+        deserialize_tx(tx_data)
     );
 
     const block = new Block(
@@ -137,10 +136,17 @@ export function deserializeBlock(data: Record<string, any>): Block {
     return block;
 }
 
-export function toJSON(obj: Record<string, any>): string {
+function toJSON(obj: Record<string, any>): string {
     return JSON.stringify(obj);
 }
 
-export function fromJSON(jsonString: string): Record<string, any> {
+function fromJSON(jsonString: string): Record<string, any> {
     return JSON.parse(jsonString);
+}
+
+
+export { 
+    serialize_tx, deserialize_tx,
+    serialize_block, deserialize_block,
+    toJSON, fromJSON
 }

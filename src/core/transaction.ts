@@ -13,6 +13,7 @@ class Transaction {
     amount: number;
     sender: string;
     recipient: string;
+    tx_id: string;
     bytecode?: string; 
     contract_addr?: string;
     signature: string;
@@ -37,6 +38,7 @@ class Transaction {
         this.recipient = recipient;
         this.type = type;
         this.timestamp = timestamp;
+        this.tx_id = '';
         this.publicKey = publicKey;
         this.signature = signature;
         this.nonce = nonce;
@@ -62,6 +64,13 @@ class Transaction {
         }
         
         throw new Error('Unknown transaction type');
+    }
+
+    compute_tx_id() {
+        const data = this.get_signing_data();
+        const id = hash_tostr(data);
+        
+        this.tx_id = id;
     }
 
     get_tx_nonce(): number {

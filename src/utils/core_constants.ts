@@ -9,6 +9,8 @@ const GEN_CONTRACT_RECIPIENT: string = "0x00000000000000000000000000000000000000
 const MIN_DIFFICULTY = 4;
 const MAX_DIFFICULTY = 10;
 
+const PROTOCOL_ID: string = `/bytechain/sync/1.0.0`;
+
 const BLOCK_WINDOW = 3;
 
 enum Tx_Type {
@@ -37,7 +39,7 @@ export {
     BC_NAME, BC_NAME_PUB,
     GEN_PREV_HASH, BLOCK_WINDOW, 
     MIN_DIFFICULTY, MAX_DIFFICULTY, 
-    MAX_NONCE_ATTEMPTS,
+    MAX_NONCE_ATTEMPTS, PROTOCOL_ID,
     GEN_CONTRACT_RECIPIENT,
-    BlockHeader, Tx_Type, print 
+    BlockHeader, Tx_Type, print
 };
