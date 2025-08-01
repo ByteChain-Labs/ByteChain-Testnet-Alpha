@@ -1,6 +1,7 @@
 import fs from 'fs'
 import express from 'express';
 import { Request, Response } from 'express';
+import cors from 'cors';
 import P2PNode from "../network/p2p.js";
 import BlockChain from "./blockchain.js";
 import Transaction from "./transaction.js";
@@ -36,6 +37,7 @@ class BCNode {
     }
 
     private setup_api_endpoints() {
+        this.app.use(cors());
         this.app.use(express.json());
 
         this.app.get('/new_acc', (_: Request, res: Response) => {
@@ -43,7 +45,7 @@ class BCNode {
             res.status(200).json({ priv_key, pub_key, blockchain_addr })
         })
 
-        this.app.post('/send_tx', async (req: Request, res: Response) => {
+        this.app.post('/new_tx', async (req: Request, res: Response) => {
             try {
                 const tx_data = req.body;
 

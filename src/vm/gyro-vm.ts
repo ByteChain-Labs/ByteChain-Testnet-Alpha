@@ -1,3 +1,4 @@
+import { print } from '../utils/core_constants.js';
 import { OpCode, OpcodeName } from './opcodes.js';
 import readline from 'readline';
 
@@ -211,7 +212,7 @@ export class GyroVM {
 
         case OpCode.PRINT:
           this.ensureStack(1);
-          console.log(this.stack.pop());
+          print(this.stack.pop());
           break;
 
         case OpCode.INPUT: {
