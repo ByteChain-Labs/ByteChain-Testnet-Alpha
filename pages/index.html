@@ -143,6 +143,69 @@
       overflow-x: auto;
       font-size: 12px;
     }
+
+    .block-meta {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      font-size: 13px;
+      margin: 10px 0;
+      padding: 10px;
+      background: #18181f;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .block-meta code {
+      word-break: break-all;
+      font-family: 'JetBrains Mono', monospace;
+      background: #101016;
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .block h4 {
+      margin: 10px 0 5px;
+      color: var(--accent);
+    }
+
+    .tx {
+      background: #25252e;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #e0e0e0;
+    }
+
+    .search-bar {
+    margin: 20px 30px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .search-bar input {
+    flex: 1;
+    padding: 10px;
+    background: #15151c;
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+
+  .search-bar button {
+    background: var(--accent);
+    color: #000;
+    font-weight: bold;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
   </style>
 </head>
 <body>
@@ -152,38 +215,25 @@
     <span>⛓️ Decentralized | Secure | Transparent</span>
   </header>
 
-  <div class="tab-bar">
-    <button class="tab-btn active" data-tab="explorer">Explorer</button>
-    <button class="tab-btn" data-tab="send-tx">Send TX</button>
+  <div class="search-bar">
+    <input id="search-input" type="text" placeholder="Search block hash, tx id, or address..." />
+    <button onclick="performSearch()">Search</button>
   </div>
 
   <div class="container">
     <div id="explorer" class="tab-content">
       <div class="status-grid">
-        <div class="status-box"><label>Node ID</label><span id="node-id">...</span></div>
         <div class="status-box"><label>Chain Length</label><span id="chain-length">...</span></div>
-        <div class="status-box"><label>Pending TXs</label><span id="pending-txns">...</span></div>
+        <div class="status-box"><label>Pending Txs</label><span id="pending-txns">...</span></div>
       </div>
       <div id="blocks"></div>
-    </div>
-
-    <div id="send-tx" class="tab-content" style="display: none;">
-      <div class="form">
-        <div class="form-group"><label>Private Key</label><input type="password" id="privKey"></div>
-        <div class="form-group"><label>Public Key</label><input id="pubKey"></div>
-        <div class="form-group"><label>Sender</label><input id="sender"></div>
-        <div class="form-group"><label>Recipient</label><input id="recipient"></div>
-        <div class="form-group"><label>Amount</label><input type="number" step="0.001" id="amount"></div>
-        <button class="submit-btn" onclick="submitTx()">Submit Transaction</button>
-        <div id="tx-result" style="margin-top: 15px;"></div>
-      </div>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-sha256/0.9.0/sha256.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/elliptic@6.5.4/dist/elliptic.min.js"></script>
   <script>
-    const API = 'http://localhost:3001';
+    const API = 'http://localhost:3002';
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -195,32 +245,47 @@
     });
 
     function renderBlocks(chain) {
-        const container = document.getElementById('blocks');
-        container.innerHTML = '';
-        chain.reverse().forEach(block => {
+      const container = document.getElementById('blocks');
+      container.innerHTML = '';
+
+      chain.reverse().forEach(block => {
         const div = document.createElement('div');
         div.className = 'block';
+
         const txs = block.transactions.map(tx => `
-            <div class="tx">
-            ${tx.tx_id.slice(0, 12)}... from ${tx.sender.slice(0, 10)} → ${tx.recipient.slice(0, 10)} : ${tx.amount}
-            <pre>${JSON.stringify(tx, null, 2)}</pre>
-            </div>`).join('');
+          <div class="tx">
+            <div><strong>amount:</strong> ${tx.amount}</div>
+            <div><strong>sender:</strong> ${tx.sender}</div>
+            <div><strong>recipient:</strong> ${tx.recipient}</div>
+            <div><strong>transaction id:</strong> ${tx.tx_id}</div>
+          </div>
+        `).join('');
+
         div.innerHTML = `
-            <div class="block-header">
+          <div class="block-header">
             <h3>Block #${block.block_header.block_height}</h3>
-            <small>${block.block_header.block_hash.slice(0, 20)}...</small>
-            </div>
-            <div class="transactions">${txs}</div>
+          </div>
+          <div class="block-meta">
+            <div><strong>Height:</strong> ${block.block_header.block_height}</div>
+            <div><strong>Timestamp:</strong> ${new Date(block.block_header.timestamp).toLocaleString()}</div>
+            <div><strong>Nonce:</strong> ${block.block_header.nonce}</div>
+            <div><strong>Hash:</strong> <code>${block.block_header.block_hash}</code></div>
+            <div><strong>Previous Hash:</strong> <code>${block.block_header.prev_block_hash}</code></div>
+          </div>
+
+          <div class="transactions">
+            <h4>Transactions (${block.transactions.length}):</h4>
+            ${txs || '<em>No transactions</em>'}
+          </div>
         `;
         container.appendChild(div);
-        });
+      });
     }
 
     function loadStatus() {
         fetch(`${API}/status`)
         .then(res => res.json())
         .then(data => {
-            document.getElementById('node-id').textContent = data.peer_id;
             document.getElementById('chain-length').textContent = data.chain_len;
             document.getElementById('pending-txns').textContent = data.pending_tx_count;
         });
@@ -240,44 +305,13 @@
     setInterval(refresh, 5000);
     refresh();
 
-    function submitTx() {
-        const privKey = document.getElementById('privKey').value;
-        const pubKey = document.getElementById('pubKey').value;
-        const sender = document.getElementById('sender').value;
-        const recipient = document.getElementById('recipient').value;
-        const amount = parseFloat(document.getElementById('amount').value);
-        const nonce = Date.now();
-        const timestamp = Date.now();
-        const type = 'byte_tx';
-
-        const tx = { amount, sender, recipient, timestamp, publicKey: pubKey, nonce, type };
-        const sorted = JSON.stringify(tx, Object.keys(tx).sort());
-
-        const ec = new elliptic.ec('secp256k1');
-        let signature = '';
-        try {
-          const key = ec.keyFromPrivate(privKey, 'hex');
-          const hash = sha256(sorted);
-          signature = key.sign(hash).toDER('hex');
-        } catch (e) {
-          document.getElementById('tx-result').innerText = 'Invalid private key or signing error.';
-          return;
-        }
-        tx.signature = signature;
-
-        fetch(`${API}/new_tx`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tx)
-        })
-        .then(res => res.json())
-        .then(data => {
-        document.getElementById('tx-result').innerText = data.msg || 'Sent';
-        refresh();
-        })
-        .catch(err => {
-        document.getElementById('tx-result').innerText = 'Error: ' + err.message;
-        });
+    function performSearch() {
+      const query = document.getElementById('search-input').value.trim();
+      if (query) {
+        window.location.href = `search.html?q=${encodeURIComponent(query)}`;
+      }
+      
+      query.innerHTML = '';
     }
   </script>
 
