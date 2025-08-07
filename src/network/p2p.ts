@@ -40,9 +40,7 @@ class P2PNode {
                 identify: identify(),
                 ping: ping(),
                 dht: kadDHT({
-                    maxInboundStreams: 5000,
-                    maxOutboundStreams: 5000,
-                    clientMode: true,
+                    clientMode: false,
                 }),
                 pubsub: gossipsub({
                     allowPublishToZeroTopicPeers: true,
