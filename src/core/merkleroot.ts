@@ -11,12 +11,12 @@ function calc_merkleroot<T>(data_arr: T[]): string {
 
     while (hashed_dataarr.length > 1) {
         if (hashed_dataarr.length % 2 !== 0) {
-            hashed_dataarr.push(hashed_dataarr[hashed_dataarr.length - 1]); // Duplicate last item
+            hashed_dataarr.push(hashed_dataarr[hashed_dataarr.length - 1]);
         }
 
         const new_level: string[] = [];
 
-        for (let i = 0; i < hashed_dataarr.length; i += 2) { // FIXED INCREMENT
+        for (let i = 0; i < hashed_dataarr.length; i += 2) {
             new_level.push(hash_tostr(hashed_dataarr[i] + hashed_dataarr[i + 1]));
         }
 

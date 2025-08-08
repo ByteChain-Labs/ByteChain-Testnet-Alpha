@@ -1,9 +1,8 @@
 import BCNode from "./core/node.js";
 import { print } from "./utils/core_constants.js";
 
-const node_port = parseInt(process.env.PORT || '4001');
 
-const bc_node = new BCNode(node_port, 3001);
+const bc_node = new BCNode();
 
 async function main() {
     await bc_node.start();
