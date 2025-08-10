@@ -10,12 +10,14 @@ import Account from '../accounts/account.js';
 
 
 function read_file() {
-    const file_path = 'bcnode-setup.json';
+    const file_path = 'bc-setup.json';
     const bc_setup = fs.readFileSync(file_path, 'utf-8');
     const bc_setup_obj = JSON.parse(bc_setup);
     const miner_addr = bc_setup_obj.blockchain_addr;
+    const p2p_port = bc_setup_obj.p2p_port;
+    const api_port = bc_setup_obj.node_port;
 
-    return miner_addr;
+    return { miner_addr, p2p_port, api_port };
 }
 
 class BCNode {
@@ -26,10 +28,10 @@ class BCNode {
     private p2p: P2PNode;
     private app: express.Application;
 
-    constructor(p2p_port: number, api_port: number) {
-        this.p2p_port = p2p_port;
-        this.api_port = api_port;
-        this.miner_addr = read_file();
+    constructor() {
+        this.p2p_port = read_file().p2p_port;
+        this.api_port = read_file().api_port;
+        this.miner_addr = read_file().miner_addr;
         this.bytechain = new BlockChain();
         this.p2p = new P2PNode(this.bytechain)
         this.app = express();

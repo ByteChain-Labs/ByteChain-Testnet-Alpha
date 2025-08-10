@@ -6,7 +6,7 @@ import {
 } from "../utils/core_constants.js";
 import Transaction from "./transaction.js";
 import Block from "./block.js";
-import { GyroVM } from "../vm/gyro-vm.js";
+import { ByteVM } from "../vm/byte-vm.js";
 
 
 interface Contract {
@@ -61,15 +61,15 @@ class BlockChain {
             throw new Error('Transaction data is incomplete')
         }
 
+        const prev_nonce = this.addr_nonce.get(sender) ?? 0;
+        const sender_bal = this.addr_bal.get(sender) ?? 0;
+
         try {
             if (type === Tx_Type.BYTE_TX) {
                 if (sender === BC_NAME) {
                     this.tx_pool.push(tx);
                     return tx;
                 } else {
-                    const prev_nonce = this.addr_nonce.get(sender) ?? 0;
-                    const sender_bal = this.addr_bal.get(sender) ?? 0;
-
                     if(amount < 0) {
                         throw new Error("Invalid amount");
                     }
@@ -95,8 +95,6 @@ class BlockChain {
                     throw new Error("Incomplete transaction detail");
                 }
 
-                const prev_nonce = this.addr_nonce.get(sender) ?? 0;
-
                 if (nonce !== prev_nonce + 1) {
                     throw new Error("Invalid nonce value");
                 }
@@ -104,23 +102,13 @@ class BlockChain {
                 if (!tx.verify_tx_sig()) {
                     throw new Error("Invalid Transaction");
                 }
-
-                const bc = bytecode ?? '';
-
-                const new_contract: Contract = {
-                    creator: sender,
-                    bytecode: bc,
-                }
                 
                 this.tx_pool.push(tx);
                 this.addr_nonce.set(sender, prev_nonce + 1);
-                this.contract_pool.set(contract_addr ?? '', new_contract)
             } else if (type === Tx_Type.CONTRACT_CALL) {
                 if (nonce === undefined || contract_addr === undefined) {
                     throw new Error("Incomplete transaction detail");
                 }
-
-                const prev_nonce = this.addr_nonce.get(sender) ?? 0;
 
                 if (nonce !== prev_nonce + 1) {
                     throw new Error("Invalid nonce value");
@@ -151,17 +139,26 @@ class BlockChain {
                 const { type, amount,  recipient, contract_addr } = transaction;
                 
                 if (type === Tx_Type.BYTE_TX) {
-                    const recipient_bal = this.addr_bal.get(recipient) ?? 0;
+                    const recipient_bal = this.addr_bal.get(recipient)!;
                     this.addr_bal.set(recipient, recipient_bal + amount);
                 } else if (type === Tx_Type.CONTRACT) {
-                    continue;
+                    const sender = transaction.sender;
+                    const bytecode = transaction.bytecode!;
+                    const contract_addr = transaction.contract_addr!;
+
+                    const new_contract: Contract = {
+                        creator: sender,
+                        bytecode
+                    }
+
+                    this.contract_pool.set(contract_addr, new_contract)
                 } else if (type === Tx_Type.CONTRACT_CALL) {
                     const contract = this.contract_pool.get(contract_addr ?? '');
                     const bc = contract?.bytecode;
                     const contract_obj = JSON.parse(bc ?? '');
-                    const { bytecode, constantPool } = contract_obj;
+                    const { bytecode } = contract_obj;
 
-                    const vm = new GyroVM(bytecode, constantPool);
+                    const vm = new ByteVM(bytecode);
                     vm.run();
                 } else {
                     throw new Error('Amount is possibly undefined');
