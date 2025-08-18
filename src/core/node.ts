@@ -15,7 +15,7 @@ function read_file() {
     const bc_setup_obj = JSON.parse(bc_setup);
     const miner_addr = bc_setup_obj.blockchain_addr;
     const p2p_port = bc_setup_obj.p2p_port;
-    const api_port = bc_setup_obj.node_port;
+    const api_port = bc_setup_obj.api_port;
 
     return { miner_addr, p2p_port, api_port };
 }
@@ -47,11 +47,11 @@ class BCNode {
             res.status(200).json({ priv_key, pub_key, blockchain_addr })
         })
 
-        this.app.post('/new_tx', async (req: Request, res: Response) => {
+        this.app.post('/byte_tx', async (req: Request, res: Response) => {
             try {
                 const tx_data = req.body;
 
-                const new_tx = new Transaction(
+                const new_btx = new Transaction(
                     tx_data.amount,
                     tx_data.sender,
                     tx_data.recipient,
@@ -62,9 +62,70 @@ class BCNode {
                     tx_data.nonce
                 );
                 
-                const tx_result = this.bytechain.add_new_tx(new_tx);
+                const tx_result = this.bytechain.add_new_tx(new_btx);
                 if (tx_result) {
-                    this.p2p.publishTransaction(new_tx);
+                    this.p2p.publishTransaction(new_btx);
+                    return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
+                } else {
+                    return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
+                }
+            } catch (err: any) {
+                console.error(`Error processing /send_tx: ${err}`);
+                return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
+            }
+
+        });
+
+        this.app.post('/new_contract', async (req: Request, res: Response) => {
+            try {
+                const tx_data = req.body;
+
+                const new_ctx = new Transaction(
+                    tx_data.amount,
+                    tx_data.sender,
+                    tx_data.recipient,
+                    tx_data.type,
+                    tx_data.timestamp,
+                    tx_data.publicKey,
+                    tx_data.signature,
+                    tx_data.nonce,
+                    tx_data.contract_addr,
+                    tx_data.bytecode,
+                );
+                
+                const tx_result = this.bytechain.add_new_tx(new_ctx);
+                if (tx_result) {
+                    this.p2p.publishTransaction(new_ctx);
+                    return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
+                } else {
+                    return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
+                }
+            } catch (err: any) {
+                console.error(`Error processing /send_tx: ${err}`);
+                return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
+            }
+
+        });
+
+        this.app.post('/contract_call', async (req: Request, res: Response) => {
+            try {
+                const tx_data = req.body;
+
+                const new_cctx = new Transaction(
+                    tx_data.amount,
+                    tx_data.sender,
+                    tx_data.recipient,
+                    tx_data.type,
+                    tx_data.timestamp,
+                    tx_data.publicKey,
+                    tx_data.signature,
+                    tx_data.nonce,
+                    tx_data.contract_addr,
+                );
+                
+                const tx_result = this.bytechain.add_new_tx(new_cctx);
+                if (tx_result) {
+                    this.p2p.publishTransaction(new_cctx);
                     return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
                 } else {
                     return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });

@@ -5,6 +5,7 @@ import { noise } from '@chainsafe/libp2p-noise';
 import { yamux } from '@chainsafe/libp2p-yamux';
 import { identify } from '@libp2p/identify';
 import { kadDHT } from '@libp2p/kad-dht';
+import { bootstrap } from '@libp2p/bootstrap';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { mdns } from '@libp2p/mdns';
 import { ping } from '@libp2p/ping';
@@ -35,7 +36,14 @@ class P2PNode {
             ],
             connectionEncrypters: [noise()],
             streamMuxers: [yamux()],
-            peerDiscovery: [mdns()],
+            peerDiscovery: [
+                mdns(),
+                bootstrap({
+                    list: [
+                        '/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ',
+                    ]
+                })
+            ],
             services: {
                 identify: identify(),
                 ping: ping(),

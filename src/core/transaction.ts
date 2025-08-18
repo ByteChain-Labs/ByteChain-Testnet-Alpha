@@ -30,8 +30,8 @@ class Transaction {
         publicKey: string,
         signature: string,
         nonce: number,
+        contract_addr?: string,
         bytecode?: string,
-        contract_addr?: string
     ) {
         this.amount = amount;
         this.sender = sender;
