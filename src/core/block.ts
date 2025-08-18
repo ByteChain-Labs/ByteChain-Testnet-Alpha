@@ -23,7 +23,7 @@ class Block {
 
     get_base_hash_input(): string {
         const { block_height, timestamp, difficulty, merkleroot,  prev_block_hash } = this.block_header;
-        return `${block_height}${timestamp}${difficulty}${merkleroot}${prev_block_hash}${this.transactions}`;
+        return `${block_height}${timestamp}${difficulty}${merkleroot}${prev_block_hash}`;
     }
 
     set_block_props(): { n_nonce: number, hash: string } {

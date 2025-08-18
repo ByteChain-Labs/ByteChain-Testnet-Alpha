@@ -65,7 +65,7 @@ class Account {
         return this.bc_instance.addr_bal.get(this.blockchain_addr) ?? 0;
     }
 
-    acc_sign_byte_tx(amount: number, recipient: string): Transaction {
+    sign_byte_tx(amount: number, recipient: string): Transaction {
         try {
             const next_nonce = this.check_nonce() + 1;
             const tx = new Transaction(amount, this.blockchain_addr, recipient, Tx_Type.BYTE_TX, Date.now(), this.pub_key, "", next_nonce);
@@ -77,7 +77,7 @@ class Account {
         }
     }
 
-    acc_sign_contract(bytecode: string): Transaction {
+    sign_contract(bytecode: string): Transaction {
         try {
             const next_nonce = this.check_nonce() + 1;
             const tx = new Transaction(0, this.blockchain_addr, GEN_CONTRACT_RECIPIENT, Tx_Type.CONTRACT, Date.now(), this.pub_key, "", next_nonce, bytecode);
@@ -90,7 +90,7 @@ class Account {
         }
     }
 
-    acc_sign_contract_call(contract_addr: string,): Transaction {
+    sign_contract_call(contract_addr: string,): Transaction {
         try {
             const next_nonce = this.check_nonce() + 1;
             const tx = new Transaction(0, this.blockchain_addr, GEN_CONTRACT_RECIPIENT, Tx_Type.CONTRACT_CALL, Date.now(), this.pub_key, "", next_nonce);
