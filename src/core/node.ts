@@ -70,7 +70,7 @@ class BCNode {
                     return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
                 }
             } catch (err: any) {
-                console.error(`Error processing /send_tx: ${err}`);
+                console.error(`Error processing /byte_tx: ${err}`);
                 return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
             }
 
@@ -101,7 +101,7 @@ class BCNode {
                     return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
                 }
             } catch (err: any) {
-                console.error(`Error processing /send_tx: ${err}`);
+                console.error(`Error processing /new_contract: ${err}`);
                 return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
             }
 
@@ -131,13 +131,13 @@ class BCNode {
                     return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
                 }
             } catch (err: any) {
-                console.error(`Error processing /send_tx: ${err}`);
+                console.error(`Error processing /contract_call: ${err}`);
                 return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
             }
 
         });
 
-        this.app.get('/get_bal/:address', (req: Request, res: Response) => {
+        this.app.get('/balance/:address', (req: Request, res: Response) => {
             const addr = req.params.address;
 
             const balance = this.bytechain.addr_bal.get(addr) || 0;
@@ -148,7 +148,7 @@ class BCNode {
             res.status(200).json(this.bytechain.chain);
         });
 
-        this.app.get('/pending_tx', (_: Request, res: Response) => {
+        this.app.get('/transaction/pool', (_: Request, res: Response) => {
             res.status(200).json(this.bytechain.tx_pool);
         });
 
