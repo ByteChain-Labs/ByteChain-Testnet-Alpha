@@ -32,7 +32,7 @@ To run a ByteChain Testnet Alpha node locally, follow these steps:
 
 1.  **Clone the Repository**:
     ```bash
-    git clone [https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git](https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git)
+    git clone https://github.com/ByteChain-Labs/ByteChain-Testnet-Alpha.git
     ```
 
 2.  **Install Dependencies**:
