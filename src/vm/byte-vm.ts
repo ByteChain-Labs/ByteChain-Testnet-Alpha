@@ -1,4 +1,4 @@
-import { print } from '../utils/core_constants.js';
+import { print } from '../utils/constants.js';
 import { OpCode, OpcodeName } from './opcodes.js';
 import readline from 'readline';
 

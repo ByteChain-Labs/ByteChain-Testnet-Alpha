@@ -3,7 +3,7 @@ import {
     MIN_DIFFICULTY, MAX_DIFFICULTY,
     BLOCK_WINDOW, GEN_PREV_HASH,
     BC_NAME, BC_NAME_PUB, Tx_Type
-} from "../utils/core_constants.js";
+} from "../utils/constants.js";
 import Transaction from "./transaction.js";
 import Block from "./block.js";
 import { ByteVM } from "../vm/byte-vm.js";
@@ -38,7 +38,7 @@ class BlockChain {
         this.tx_pool.push(tx);
         const txs = this.tx_pool;
         const new_block = new Block(0, MIN_DIFFICULTY, GEN_PREV_HASH, txs);
-        const recipient_bal = this.addr_bal.get(gen_recipient) ?? 0;
+        const recipient_bal = this.addr_bal.get(gen_recipient)!;
         this.addr_bal.set(gen_recipient, recipient_bal + gen_amount);
         new_block.set_block_props();
 
@@ -61,8 +61,8 @@ class BlockChain {
             throw new Error('Transaction data is incomplete')
         }
 
-        const prev_nonce = this.addr_nonce.get(sender) ?? 0;
-        const sender_bal = this.addr_bal.get(sender) ?? 0;
+        const prev_nonce = this.addr_nonce.get(sender)!;
+        const sender_bal = this.addr_bal.get(sender)!;
 
         try {
             if (type === Tx_Type.BYTE_TX) {
@@ -151,11 +151,11 @@ class BlockChain {
                         bytecode
                     }
 
-                    this.contract_pool.set(contract_addr, new_contract)
+                    this.contract_pool.set(contract_addr, new_contract);
                 } else if (type === Tx_Type.CONTRACT_CALL) {
-                    const contract = this.contract_pool.get(contract_addr ?? '');
+                    const contract = this.contract_pool.get(contract_addr!);
                     const bc = contract?.bytecode;
-                    const contract_obj = JSON.parse(bc ?? '');
+                    const contract_obj = JSON.parse(bc!);
                     const { bytecode } = contract_obj;
 
                     const vm = new ByteVM(bytecode);

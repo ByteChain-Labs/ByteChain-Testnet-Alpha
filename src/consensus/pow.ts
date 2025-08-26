@@ -1,5 +1,5 @@
 import { hash_tostr } from '../utils/crypto.js';
-import { MAX_NONCE_ATTEMPTS } from '../utils/core_constants.js';
+import { MAX_NONCE_ATTEMPTS } from '../utils/constants.js';
 
 function proof_of_work(block_data_str: string, mining_difficulty: number): { hash: string, n_nonce: number } {
     try {

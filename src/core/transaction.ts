@@ -1,6 +1,6 @@
 import base58 from "bs58";
 import elliptic_pkg from 'elliptic';
-import { BC_NAME, Tx_Type } from "../utils/core_constants.js";
+import { BC_NAME, Tx_Type } from "../utils/constants.js";
 import { hash_tobuf, hash_tostr } from "../utils/crypto.js";
 
 

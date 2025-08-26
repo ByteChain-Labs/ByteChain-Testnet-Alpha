@@ -5,19 +5,23 @@ import cors from 'cors';
 import P2PNode from "../network/p2p.js";
 import BlockChain from "./blockchain.js";
 import Transaction from "./transaction.js";
-import { print } from '../utils/core_constants.js';
+import { print } from '../utils/constants.js';
 import Account from '../accounts/account.js';
 
 
 function read_file() {
-    const file_path = 'bc-setup.json';
-    const bc_setup = fs.readFileSync(file_path, 'utf-8');
-    const bc_setup_obj = JSON.parse(bc_setup);
-    const miner_addr = bc_setup_obj.blockchain_addr;
-    const p2p_port = bc_setup_obj.p2p_port;
-    const api_port = bc_setup_obj.api_port;
+    try {
+        const file_path = 'bc-setup.json';
+        const bc_setup = fs.readFileSync(file_path, 'utf-8');
+        const bc_setup_obj = JSON.parse(bc_setup);
+        const miner_addr = bc_setup_obj.blockchain_addr;
+        const p2p_port = bc_setup_obj.p2p_port;
+        const api_port = bc_setup_obj.api_port;
 
-    return { miner_addr, p2p_port, api_port };
+        return { miner_addr, p2p_port, api_port };
+    } catch (err) {
+        throw new Error("Unable to read data from bc-setup.json");
+    }
 }
 
 class BCNode {
@@ -42,106 +46,94 @@ class BCNode {
         this.app.use(cors());
         this.app.use(express.json());
 
-        this.app.get('/new_acc', (_: Request, res: Response) => {
+        this.app.get('/new-account', (_: Request, res: Response) => {
             const { priv_key, pub_key, blockchain_addr} = Account.new();
             res.status(200).json({ priv_key, pub_key, blockchain_addr })
         })
 
-        this.app.post('/byte_tx', async (req: Request, res: Response) => {
+        this.app.post('/tx/send', async (req: Request, res: Response) => {
             try {
                 const tx_data = req.body;
 
-                const new_btx = new Transaction(
-                    tx_data.amount,
-                    tx_data.sender,
-                    tx_data.recipient,
-                    tx_data.type,
-                    tx_data.timestamp,
-                    tx_data.publicKey,
-                    tx_data.signature,
-                    tx_data.nonce
-                );
-                
-                const tx_result = this.bytechain.add_new_tx(new_btx);
-                if (tx_result) {
-                    this.p2p.publishTransaction(new_btx);
-                    return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
+                if (tx_data.contract_addr && tx_data.bytecode) {
+                    const new_ctx = new Transaction(
+                        tx_data.amount,
+                        tx_data.sender,
+                        tx_data.recipient,
+                        tx_data.type,
+                        tx_data.timestamp,
+                        tx_data.publicKey,
+                        tx_data.signature,
+                        tx_data.nonce,
+                        tx_data.contract_addr,
+                        tx_data.bytecode,
+                    );
+
+                    const tx_result = this.bytechain.add_new_tx(new_ctx);
+                    if (tx_result) {
+                        this.p2p.publishTransaction(new_ctx);
+                        return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
+                    } else {
+                        return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
+                    }
+                } else if (tx_data.contract_addr) {
+                    const new_cctx = new Transaction(
+                        tx_data.amount,
+                        tx_data.sender,
+                        tx_data.recipient,
+                        tx_data.type,
+                        tx_data.timestamp,
+                        tx_data.publicKey,
+                        tx_data.signature,
+                        tx_data.nonce,
+                        tx_data.contract_addr,
+                    );
+
+                    const tx_result = this.bytechain.add_new_tx(new_cctx);
+                    if (tx_result) {
+                        this.p2p.publishTransaction(new_cctx);
+                        return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
+                    } else {
+                        return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
+                    }
                 } else {
-                    return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
+                    const new_btx = new Transaction(
+                        tx_data.amount,
+                        tx_data.sender,
+                        tx_data.recipient,
+                        tx_data.type,
+                        tx_data.timestamp,
+                        tx_data.publicKey,
+                        tx_data.signature,
+                        tx_data.nonce
+                    );
+
+                    const tx_result = this.bytechain.add_new_tx(new_btx);
+                    if (tx_result) {
+                        this.p2p.publishTransaction(new_btx);
+                        return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
+                    } else {
+                        return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
+                    }
                 }
             } catch (err: any) {
-                console.error(`Error processing /byte_tx: ${err}`);
+                console.error(`Error processing /send_tx: ${err}`);
                 return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
             }
-
-        });
-
-        this.app.post('/new_contract', async (req: Request, res: Response) => {
-            try {
-                const tx_data = req.body;
-
-                const new_ctx = new Transaction(
-                    tx_data.amount,
-                    tx_data.sender,
-                    tx_data.recipient,
-                    tx_data.type,
-                    tx_data.timestamp,
-                    tx_data.publicKey,
-                    tx_data.signature,
-                    tx_data.nonce,
-                    tx_data.contract_addr,
-                    tx_data.bytecode,
-                );
-                
-                const tx_result = this.bytechain.add_new_tx(new_ctx);
-                if (tx_result) {
-                    this.p2p.publishTransaction(new_ctx);
-                    return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
-                } else {
-                    return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
-                }
-            } catch (err: any) {
-                console.error(`Error processing /new_contract: ${err}`);
-                return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
-            }
-
-        });
-
-        this.app.post('/contract_call', async (req: Request, res: Response) => {
-            try {
-                const tx_data = req.body;
-
-                const new_cctx = new Transaction(
-                    tx_data.amount,
-                    tx_data.sender,
-                    tx_data.recipient,
-                    tx_data.type,
-                    tx_data.timestamp,
-                    tx_data.publicKey,
-                    tx_data.signature,
-                    tx_data.nonce,
-                    tx_data.contract_addr,
-                );
-                
-                const tx_result = this.bytechain.add_new_tx(new_cctx);
-                if (tx_result) {
-                    this.p2p.publishTransaction(new_cctx);
-                    return res.status(200).json({ status: 'success', msg: 'Transaction added successfully.' });
-                } else {
-                    return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
-                }
-            } catch (err: any) {
-                console.error(`Error processing /contract_call: ${err}`);
-                return res.status(500).json({ status: 'error', msg: 'Internal server error', details: err.message })
-            }
-
-        });
+        });         
 
         this.app.get('/balance/:address', (req: Request, res: Response) => {
             const addr = req.params.address;
 
-            const balance = this.bytechain.addr_bal.get(addr) || 0;
+            const balance = this.bytechain.addr_bal.get(addr)!;
             res.status(200).json({ address: addr, balance });
+        });
+
+        this.app.get('/nonce/:address', (req: Request, res: Response) => {
+            const addr = req.params.address;
+
+            const nonce = this.bytechain.addr_nonce.get(addr)!;
+            res.status(200).json({ address: addr, nonce });
         });
 
         this.app.get('/chain', (_: Request, res: Response) => {

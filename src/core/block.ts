@@ -1,4 +1,4 @@
-import { BlockHeader }  from "../utils/core_constants.js";
+import { BlockHeader }  from "../utils/constants.js";
 import proof_of_work from "../consensus/pow.js";
 import Transaction from "./transaction.js";
 import calc_merkleroot from "./merkleroot.js";
