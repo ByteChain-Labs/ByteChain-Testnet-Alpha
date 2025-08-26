@@ -23,7 +23,7 @@ class Wallet {
         }
     }
 
-    async sign_contract(bytecode: string): Promise<string> {
+    async deploy_contract(bytecode: string): Promise<string> {
         try {
             const { pub_key, blockchain_addr } = this.account;
             const nonce = await this.provider.check_nonce(blockchain_addr);
@@ -37,7 +37,7 @@ class Wallet {
         }
     }
 
-    async sign_contract_call(contract_addr: string,): Promise<string> {
+    async call_contract(contract_addr: string,): Promise<string> {
         try {
             const { pub_key, blockchain_addr } = this.account;
             const nonce = await this.provider.check_nonce(blockchain_addr);
