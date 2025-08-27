@@ -67,7 +67,6 @@ function deserialize_tx(data: Record<string, any>): Transaction {
         data.nonce,
         data.timestamp,
         data.bytecode,
-        data.contract_addr
     );
 
     return tx;

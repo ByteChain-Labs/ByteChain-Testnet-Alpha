@@ -5,7 +5,7 @@ import cors from 'cors';
 import P2PNode from "../network/p2p.js";
 import BlockChain from "./blockchain.js";
 import Transaction from "./transaction.js";
-import { print } from '../utils/constants.js';
+import { print, Tx_Type } from '../utils/constants.js';
 import Account from '../accounts/account.js';
 
 
@@ -55,7 +55,7 @@ class BCNode {
             try {
                 const tx_data = req.body;
 
-                if (tx_data.contract_addr && tx_data.bytecode) {
+                if (tx_data.type === Tx_Type.CONTRACT) {
                     const new_ctx = new Transaction(
                         tx_data.amount,
                         tx_data.sender,
@@ -65,7 +65,6 @@ class BCNode {
                         tx_data.publicKey,
                         tx_data.signature,
                         tx_data.nonce,
-                        tx_data.contract_addr,
                         tx_data.bytecode,
                     );
 
@@ -76,7 +75,7 @@ class BCNode {
                     } else {
                         return res.status(200).json({ status: 'error', msg: 'Failed to add transaction. Invalid or Insufficient fund' });
                     }
-                } else if (tx_data.contract_addr) {
+                } else if (tx_data.type === Tx_Type.CONTRACT_CALL) {
                     const new_cctx = new Transaction(
                         tx_data.amount,
                         tx_data.sender,
@@ -140,7 +139,20 @@ class BCNode {
             res.status(200).json(this.bytechain.chain);
         });
 
-        this.app.get('/transaction/pool', (_: Request, res: Response) => {
+        this.app.get('/chain/:number', (req: Request, res: Response) => {
+            const block_num = Number(req.params.number);
+            if (
+                isNaN(block_num) ||
+                !Number.isInteger(block_num) ||
+                block_num < 0 ||
+                block_num >= this.bytechain.chain.length
+            ) {
+                return res.status(400).json({ status: 'error', msg: 'Invalid block number' });
+            }
+            res.status(200).json(this.bytechain.chain[block_num]);
+        });
+
+        this.app.get('/tx/pool', (_: Request, res: Response) => {
             res.status(200).json(this.bytechain.tx_pool);
         });
 
