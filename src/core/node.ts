@@ -140,7 +140,20 @@ class BCNode {
             res.status(200).json(this.bytechain.chain);
         });
 
-        this.app.get('/transaction/pool', (_: Request, res: Response) => {
+        this.app.get('/chain/:number', (req: Request, res: Response) => {
+            const block_num = Number(req.params.number);
+            if (
+                isNaN(block_num) ||
+                !Number.isInteger(block_num) ||
+                block_num < 0 ||
+                block_num >= this.bytechain.chain.length
+            ) {
+                return res.status(400).json({ status: 'error', msg: 'Invalid block number' });
+            }
+            res.status(200).json(this.bytechain.chain[block_num]);
+        });
+
+        this.app.get('/tx/pool', (_: Request, res: Response) => {
             res.status(200).json(this.bytechain.tx_pool);
         });
 

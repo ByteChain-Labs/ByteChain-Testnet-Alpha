@@ -38,29 +38,21 @@ class Transaction {
         this.recipient = recipient;
         this.type = type;
         this.timestamp = timestamp;
-        this.tx_id = this.compute_tx_id();
         this.publicKey = publicKey;
         this.signature = signature;
         this.nonce = nonce;
+        this.tx_id = "";
 
-        if (this.type === Tx_Type.BYTE_TX) {
-        } else if (this.type === Tx_Type.CONTRACT || (bytecode || contract_addr) !== undefined) {
-            this.contract_addr = contract_addr;
+        if (this.type === Tx_Type.CONTRACT || (bytecode || contract_addr) !== undefined) {
             this.bytecode = bytecode;
-        } else if (this.type === Tx_Type.CONTRACT_CALL || contract_addr !== undefined) {
-            this.contract_addr = contract_addr;
-        } else {
-            throw new Error('Unknown transaction type');
         }
     }
 
     private get_signing_data(): string {
         if (this.type === Tx_Type.BYTE_TX) {
             return `${this.type}${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}`;
-        } else if ((this.bytecode || this.contract_addr) !== undefined || this.type === Tx_Type.CONTRACT) {
+        } else if ((this.bytecode !== undefined || this.contract_addr !== undefined) || this.type === Tx_Type.CONTRACT) {
             return `${this.type}${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}${this.bytecode}${this.contract_addr}`;
-        } else if (this.contract_addr !== undefined || this.type === Tx_Type.CONTRACT_CALL) {
-            return `${this.type}${this.amount}${this.sender}${this.recipient}${this.publicKey}${this.nonce}${this.timestamp}${this.contract_addr}`;
         }
         
         throw new Error('Unknown transaction type');
@@ -124,6 +116,7 @@ class Transaction {
             const sign = base58.encode(compact_sig);
 
             this.signature = sign;
+            this.tx_id = this.compute_tx_id();
 
             return this;
         } catch (err) {
