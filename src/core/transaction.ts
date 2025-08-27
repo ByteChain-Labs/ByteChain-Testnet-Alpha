@@ -30,7 +30,6 @@ class Transaction {
         publicKey: string,
         signature: string,
         nonce: number,
-        contract_addr?: string,
         bytecode?: string,
     ) {
         this.amount = amount;
@@ -43,7 +42,7 @@ class Transaction {
         this.nonce = nonce;
         this.tx_id = "";
 
-        if (this.type === Tx_Type.CONTRACT || (bytecode || contract_addr) !== undefined) {
+        if (this.type === Tx_Type.CONTRACT || bytecode !== undefined) {
             this.bytecode = bytecode;
         }
     }
