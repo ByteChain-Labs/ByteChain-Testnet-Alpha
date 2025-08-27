@@ -1,6 +1,6 @@
-const BLOCK_TIME_DIFF: number = 350; // in milliseconds, 600ms = 0.6 seconds
+const BLOCK_TIME_DIFF: number = 300; // in milliseconds, 600ms = 0.6 seconds
 const BLOCK_REWARD: number = 32;
-const MAX_NONCE_ATTEMPTS = 10_000_000;
+const MAX_NONCE_ATTEMPTS: number = 10_000_000;
 const BC_NAME: string = "0xByteChain";
 const BC_NAME_PUB: string = "0xByteChainPublicKey";
 const GEN_PREV_HASH: string = "0x00000000000000000000000000000000ByteChain";

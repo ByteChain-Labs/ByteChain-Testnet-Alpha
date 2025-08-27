@@ -54,7 +54,7 @@ class BlockChain {
     }
 
     add_new_tx(tx: Transaction): Transaction {
-        const { type, amount, sender, recipient, bytecode,contract_addr } = tx;
+        const { type, amount, sender, recipient, bytecode, contract_addr } = tx;
         const nonce = tx.get_tx_nonce();
      
         if (!type || amount === undefined || !sender || !recipient || nonce === undefined) {
