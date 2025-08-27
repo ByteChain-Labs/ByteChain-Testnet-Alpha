@@ -1,6 +1,6 @@
 import Transaction from '../core/transaction.js';
 import Block from '../core/block.js';
-import { Tx_Type } from './core_constants.js'
+import { Tx_Type } from './constants.js'
 
 /**
  * Serializes a Transaction object into a plain JavaScript object or JSON string.

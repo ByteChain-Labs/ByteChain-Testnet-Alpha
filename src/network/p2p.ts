@@ -5,7 +5,7 @@ import { noise } from '@chainsafe/libp2p-noise';
 import { yamux } from '@chainsafe/libp2p-yamux';
 import { identify } from '@libp2p/identify';
 import { kadDHT } from '@libp2p/kad-dht';
-import { bootstrap } from '@libp2p/bootstrap';
+// import { bootstrap } from '@libp2p/bootstrap';
 import { gossipsub } from '@chainsafe/libp2p-gossipsub';
 import { mdns } from '@libp2p/mdns';
 import { ping } from '@libp2p/ping';
@@ -14,7 +14,7 @@ import Block from '../core/block.js';
 import Transaction from '../core/transaction.js';
 
 import { serialize_tx, deserialize_tx, serialize_block, deserialize_block } from '../utils/serialization.js';
-import { print } from '../utils/core_constants.js';
+import { print } from '../utils/constants.js';
 
 
 class P2PNode {
@@ -38,11 +38,11 @@ class P2PNode {
             streamMuxers: [yamux()],
             peerDiscovery: [
                 mdns(),
-                bootstrap({
-                    list: [
-                        '/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ',
-                    ]
-                })
+                // bootstrap({
+                //     list: [
+                //         '/ip4/104.131.131.82/tcp/4001/ipfs/QmaCpDMGvV2BGHeYERUEnRQAwe3N8SzbUtfsmvsqQLuvuJ',
+                //     ]
+                // })
             ],
             services: {
                 identify: identify(),
