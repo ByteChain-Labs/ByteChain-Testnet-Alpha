@@ -8,7 +8,7 @@ const Dashboard = ({ address, bc }) => {
   const [balance, setBalance] = useState();
   useEffect(() => {
     async function fetchBalance() {
-      const bal = await bc.get_bal(address);
+      const bal = await bc.getBalance(address);
       setBalance(bal);
     }
     socket.on("blockMined", (block) => fetchBalance());
