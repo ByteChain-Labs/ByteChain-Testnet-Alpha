@@ -1,4 +1,4 @@
-# ByteChain: Testnet Alpha (v0.1.0)
+# ByteChain: Testnet Alpha (v0.2.0)
 
 **Warning:** ByteChain is in active development. Features are subject to change, and this Testnet Alpha should be used for experimental purposes only. Your feedback is highly appreciated!
 

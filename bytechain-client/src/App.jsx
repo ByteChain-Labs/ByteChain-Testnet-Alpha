@@ -1,4 +1,4 @@
-import BCWeb3 from "bc-web3js";
+import BCWeb3 from "bc-web3js"
 import CreateAccount from "./components/CreateAccount";
 import Dashboard from "./components/Dashboard";
 import { useState } from "react";

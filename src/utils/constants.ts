@@ -1,4 +1,4 @@
-const BLOCK_TIME_DIFF: number = 300; // in milliseconds, 600ms = 0.6 seconds
+const BLOCK_TIME_DIFF: number = 200; // in milliseconds, 200ms = 0.2 seconds
 const BLOCK_REWARD: number = 32;
 const MAX_NONCE_ATTEMPTS: number = 10_000_000;
 const BC_NAME: string = "0xByteChain";
@@ -8,7 +8,7 @@ const GEN_CONTRACT_RECIPIENT: string = "0x00000000000000000000000000000000000000
 
 const MIN_DIFFICULTY = 4;
 const MAX_DIFFICULTY = 10;
-const BLOCK_WINDOW = 3;
+const BLOCK_WINDOW = 4;
 
 enum Tx_Type {
     BYTE_TX = 'byte_tx',
