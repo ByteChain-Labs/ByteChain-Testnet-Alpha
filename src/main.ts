@@ -15,9 +15,11 @@ bc_node.io = io;
 async function main() {
     await bc_node.start(server);
 
-    setInterval(() => {
-        bc_node.pub_block();
-    }, BLOCK_TIME);
+    setTimeout(() => {
+        setInterval(() => {
+            bc_node.pub_block();
+        }, BLOCK_TIME);
+    }, 15_000);
 }
 
 main().catch((err: any) => {

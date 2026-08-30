@@ -8,6 +8,7 @@ import BlockChain from "./blockchain.js";
 import Transaction from "./transaction.js";
 import { print } from "../utils/constants.js";
 import { Server } from "socket.io";
+import { serialize_tx } from "../utils/serialization.js";
 
 
 function read_file() {
@@ -73,15 +74,28 @@ class BCNode {
 
                 if (tx_result) {
                     this.p2p.publish_tx(new_tx);
-                    return res.status(200).json({ status: "success", msg: `tx_id: ${new_tx.tx_id}` });
+                    return res.status(201).json({ status: "success", tx_id: new_tx.tx_id });
                 }
 
-                return res
-                    .status(200)
-                    .json({ status: "error", msg: "Failed to add transaction. Invalid or Insufficient fund" });
+                return res.status(400).json({ status: "error", msg: "Failed to add transaction" });
             } catch (err: any) {
-                return res.status(500).json({ status: "error", msg: "Internal server error", details: err.message });
+                return res.status(400).json({ status: "error", msg: err.message ?? "Failed to add transaction" });
             }
+        });
+
+        this.app.get("/tx/address/:address", (req: Request, res: Response) => {
+            const addr = req.params.address.toString();
+            const limit = Math.min(Number(req.query.limit) || 50, 200);
+            const offset = Number(req.query.offset) || 0;
+
+            const refs = this.bytechain.get_txs_for_addr(addr, limit, offset);
+            const transactions = refs.map((ref) => {
+                const tx = this.bytechain.get_tx_from_block(ref.block_height, ref.tx_id);
+
+                return { ...serialize_tx(tx!), block_height: ref.block_height, role: ref.role };
+            });
+
+            res.status(200).json({ address: addr, count: transactions.length, transactions });
         });
 
         this.app.get("/balance/:address", (req: Request, res: Response) => {

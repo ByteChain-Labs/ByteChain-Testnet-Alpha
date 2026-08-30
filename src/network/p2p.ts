@@ -1,6 +1,5 @@
 import { createLibp2p } from 'libp2p';
 import { webSockets } from '@libp2p/websockets';
-import { tcp } from '@libp2p/tcp';
 import { noise } from '@chainsafe/libp2p-noise';
 import { yamux } from '@chainsafe/libp2p-yamux';
 import { identify } from '@libp2p/identify';
@@ -9,7 +8,7 @@ import { bootstrap } from '@libp2p/bootstrap';
 import { gossipsub } from '@libp2p/gossipsub';
 import { mdns } from '@libp2p/mdns';
 import { ping } from '@libp2p/ping';
-import { lpStream } from 'it-length-prefixed-stream';
+import { lpStream } from '@libp2p/utils';
 import BlockChain from '../core/blockchain.js';
 import Block from '../core/block.js';
 import Transaction from '../core/transaction.js';
@@ -25,6 +24,9 @@ class P2PNode {
     blockchain: BlockChain;
     MEMPOOL_SYNC_PROTOCOL = '/bytechain/mempool/0.0.1';
     CHAIN_SYNC_PROTOCOL = '/bytechain/sync/0.0.1';
+    SYNC_BATCH_SIZE = 100;
+    private syncing_peers = new Set<string>();
+    private syncing_mempool_peers = new Set<string>();
 
     constructor(blockchainInstance: BlockChain) {
         this.blockchain = blockchainInstance;
@@ -34,13 +36,10 @@ class P2PNode {
         this.node = await createLibp2p({
             addresses: {
                 listen: [
-                    `/ip6/::/tcp/${port}`,
-                    `/ip6/::/tcp/${port + 1}/ws`,
-                    `/ip4/0.0.0.0/tcp/${port}`,
+                    `/ip4/0.0.0.0/tcp/${port}/ws`,
                 ]
             },
             transports: [
-                tcp(),
                 webSockets()
             ],
             connectionEncrypters: [noise()],
@@ -49,10 +48,10 @@ class P2PNode {
                 mdns({ interval: 20e3 }),
                 bootstrap({
                     list: [
-                        "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-                        "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
-                        "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-                        "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt"
+                        "/dns4/bytechain-bootstrap.onrender.com/tcp/443/wss/p2p/12D3KooWDFYeXNxPmKfbgs74q1xcnx16vprk4wvzrwgUEmppoVjX",
+                        // "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
+                        // "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+                        // "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt"
                     ]
                 })
             ],
@@ -71,45 +70,64 @@ class P2PNode {
 
         this.node.addEventListener('peer:discovery', (evt: any) => {
             const peer_id = evt.detail.id;
-            this.node.dial(peer_id).catch((_: any) => {});
+
+            this.node.dial(peer_id)
+                .then(() => {
+                    print(`Successfully connected to ${peer_id.toString()}`);
+                })
+                .catch((err: any) => {
+                    console.error(
+                        `Failed to dial ${peer_id.toString()}:`,
+                        err
+                    );
+                });
         });
 
-        await this.node.handle(this.MEMPOOL_SYNC_PROTOCOL, async ({ stream }: any) => {
+        await this.node.handle(this.MEMPOOL_SYNC_PROTOCOL, async (stream: any) => {
             const lp = lpStream(stream);
+
             try {
                 const mempool_data = JSON.stringify(this.blockchain.tx_pool);
                 await lp.write(new TextEncoder().encode(mempool_data));
             } catch (err: any) {
-                console.error(`Error sharing mempool: ${err instanceof Error ? err.message : err}`)
+                console.error(`Error sharing mempool: ${err instanceof Error ? err.message : err}`);
             } finally {
                 stream.close();
             }
-            
             print("Shared mempool with a peer.");
         });
 
-        await this.node.handle(this.CHAIN_SYNC_PROTOCOL, async ({ stream }: any) => {
+        await this.node.handle(this.CHAIN_SYNC_PROTOCOL, async (stream: any) => {
             const lp = lpStream(stream);
             
             try {
                 while (true) {
                     const data = await lp.read();
                     if (!data) break;
-
                     const request = JSON.parse(new TextDecoder().decode(data.subarray()));
                     const height = this.blockchain.get_latest_block().block_header.block_height;
-
                     if (request.type === 'GET_HEIGHT') {
                         await lp.write(new TextEncoder().encode(JSON.stringify({ height })));
                     } else if (request.type === 'GET_BLOCKS') {
-                        const blocks_to_send = this.blockchain.get_multiple_blocks(request.fromHeight, height);
-                        await lp.write(new TextEncoder().encode(JSON.stringify({ blocks: blocks_to_send })));
+                        const chain_len = height + 1;
+                        const to = Math.min(request.toHeight ?? chain_len, chain_len);
+                        const blocks_to_send = this.blockchain.get_multiple_blocks(request.fromHeight, to);
+                        const serialized_blocks = blocks_to_send.map(b => serialize_block(b));
+
+
+                        await lp.write(
+                            new TextEncoder().encode(JSON.stringify({ blocks: serialized_blocks })),
+                            { signal: AbortSignal.timeout(15_000) }
+                        );
                     }
                 }
             } catch (err: any) {
-                console.error(`Error syncing chain: ${err instanceof Error ? err.message : err}`)
+                const msg = err instanceof Error ? err.message : String(err);
+                if (!msg.includes('Unexpected EOF')) {
+                console.error(`Error syncing chain: ${msg}`);
+    }
             } finally {
-                await stream.close();
+                stream.close();
             }
         });
 
@@ -119,7 +137,6 @@ class P2PNode {
 
         this.node.addEventListener('peer:identify', async (evt: any) => {
             const { peerId, protocols } = evt.detail;
-            
             const is_bytechain_peer = protocols.includes(this.CHAIN_SYNC_PROTOCOL);
             
             if (is_bytechain_peer) {
@@ -217,56 +234,85 @@ class P2PNode {
     }
 
     async sync_remote_chain(peerId: any) {
+        const peer_str = peerId.toString();
+        if (this.syncing_peers.has(peer_str)) return;
+        this.syncing_peers.add(peer_str);
+
         let stream;
+        
         try {
-            stream = await this.node.dialProtocol(peerId, this.CHAIN_SYNC_PROTOCOL);
+            stream = await this.node.dialProtocol(peerId, this.CHAIN_SYNC_PROTOCOL, {
+                signal: AbortSignal.timeout(10_000)
+            });
             const lp = lpStream(stream);
 
-            await lp.write(new TextEncoder().encode(JSON.stringify({ type: 'GET_HEIGHT' })));
-            const height_result = await lp.read();
-            const { height: remote_height } = JSON.parse(new TextDecoder().decode(height_result.slice()));
+            await lp.write(
+                new TextEncoder().encode(JSON.stringify({ type: 'GET_HEIGHT' })),
+                { signal: AbortSignal.timeout(10_000) }
+            );
+            const height_result = await lp.read({ signal: AbortSignal.timeout(10_000) });
+            const { height: remote_height } = JSON.parse(new TextDecoder().decode(height_result.subarray()));
 
             const local_height = this.blockchain.get_latest_block().block_header.block_height;
 
-            if (remote_height > local_height) {
-                print(`Peer is ahead ($${remote_height} > ${local_height}$). Requesting blocks...`);
-                
-                await lp.write(new TextEncoder().encode(JSON.stringify({ 
-                    type: 'GET_BLOCKS', 
-                    fromHeight: local_height + 1 
-                })));
-                
-                const blocks_result = await lp.read();
-
-                if (blocks_result) {
-                    const { blocks } = JSON.parse(new TextDecoder().decode(blocks_result.subarray()));
-                    let received_blocks: Block[] = [];
-
-                    blocks.forEach((blockData: any) => {
-                        const block = deserialize_block(blockData);
-                        received_blocks.push(block)
-                    });
-
-                    this.blockchain.sync_chain(received_blocks) 
-                    print(`Successfully synced ${blocks.length} blocks.`);
-                }
-            } else {
+            if (remote_height <= local_height) {
                 print("Chain is already up to date.");
+                return;
+            }
+
+            print(`Peer is ahead (${remote_height} > ${local_height}). Requesting blocks in batches...`);
+
+            const received_blocks: Block[] = [];
+            let cursor = local_height + 1;
+
+            while (cursor <= remote_height) {
+                const to = Math.min(cursor + this.SYNC_BATCH_SIZE, remote_height + 1);
+
+                await lp.write(
+                    new TextEncoder().encode(JSON.stringify({ type: 'GET_BLOCKS', fromHeight: cursor, toHeight: to })),
+                    { signal: AbortSignal.timeout(15_000) }
+                );
+
+                const blocks_result = await lp.read({ signal: AbortSignal.timeout(15_000) });
+                if (!blocks_result) break;
+
+                const { blocks } = JSON.parse(new TextDecoder().decode(blocks_result.subarray()));
+                if (!blocks || blocks.length === 0) break;
+
+                for (const blockData of blocks) {
+                    received_blocks.push(deserialize_block(blockData));
+                }
+
+                print(`Fetched blocks ${cursor}-${to - 1} (${received_blocks.length} total so far)`);
+                cursor = to;
+            }
+
+            if (received_blocks.length > 0) {
+                this.blockchain.sync_chain(received_blocks);
+                print(`Successfully synced ${received_blocks.length} blocks.`);
             }
         } catch (err: any) {
             console.error(`Chain Sync failed with ${peerId.toString()}:`, err.message);
         } finally {
             if (stream) stream.close();
+            this.syncing_peers.delete(peer_str);
         }
     }
 
     async request_mempool(peerId: any) {
+        const peer_str = peerId.toString();
+        if (this.syncing_mempool_peers.has(peer_str)) return;
+        this.syncing_mempool_peers.add(peer_str);
+
         let stream;
         try {
-            stream = await this.node.dialProtocol(peerId, this.MEMPOOL_SYNC_PROTOCOL);
-            const lp = lpStream(stream);
+            const dialResult = await this.node.dialProtocol(peerId, this.MEMPOOL_SYNC_PROTOCOL);
+
+            stream = dialResult.stream || dialResult;
             
+            const lp = lpStream(stream);
             const response = await lp.read();
+
             if (response) {
                 const mempoolString = new TextDecoder().decode(response.subarray());
                 const remoteMempool = JSON.parse(mempoolString);
@@ -284,6 +330,7 @@ class P2PNode {
             console.error(`Mempool sync failed:`, err.message);
         } finally {
             if (stream) stream.close();
+            this.syncing_mempool_peers.delete(peer_str);
         }
     }
 }
