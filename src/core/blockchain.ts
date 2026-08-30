@@ -1,14 +1,18 @@
+import fs from "fs";
 import type { PubKey } from "bc-web3js";
 import {
     BLOCK_REWARD, BLOCK_TIME_DIFF,
     MIN_DIFFICULTY, MAX_DIFFICULTY,
     BLOCK_WINDOW_DIFF, BLOCK_WINDOW_FEE,
     GEN_PREV_HASH, BC_NAME,
-    VANITY_ADDR
+    VANITY_ADDR, print,
+    GENESIS_TIMESTAMP
 } from "../utils/constants.js";
+import { save_state, load_state } from "../utils/storage.js";
 import Transaction from "./transaction.js";
 import Block from "./block.js";
-import fs from "fs";
+
+
 
 
 function read_gen_file(): Block {
@@ -31,17 +35,35 @@ interface AccState {
     balance: number,
 }
 
+interface AddrTxRef {
+    tx_id: string;
+    block_height: number;
+    role: "sent" | "received";
+}
+
 class BlockChain {
     tx_pool: Transaction[];
     chain: Block[];
     difficulty: number = MIN_DIFFICULTY;
-    addr_state: Map<PubKey, AccState>;
+    addr_state: Map<PubKey, AccState> = new Map<PubKey, AccState>();
+    addr_tx_index: Map<PubKey, AddrTxRef[]> = new Map();
 
     constructor() {
         this.tx_pool = [];
-        this.chain = [];
-        this.addr_state = new Map<PubKey, AccState>();
-        this.genesis_block();
+
+        const persisted = load_state();
+        if (persisted) {
+            this.chain = persisted.chain;
+            this.addr_state = persisted.addr_state;
+            this.difficulty = persisted.difficulty;
+            print(`Restored chain from disk: ${this.chain.length} block(s).`);
+        } else {
+            this.chain = [];
+            this.genesis_block();
+            save_state(this.chain, this.addr_state, this.difficulty);
+        }
+
+        this.rebuild_index();
     }
 
     genesis_block() {
@@ -64,7 +86,7 @@ class BlockChain {
         
         const txs = this.tx_pool;
         const new_block = new Block(0, MIN_DIFFICULTY, GEN_PREV_HASH, txs);
-        new_block.set_block_props();
+        new_block.set_block_props(GENESIS_TIMESTAMP);
 
         this.chain.push(new_block);
         this.tx_pool = [];
@@ -106,6 +128,34 @@ class BlockChain {
         const state = this.addr_state.get(addr)!;
         if (state.balance < amount) throw new Error("Insufficient balance");
         state.balance -= amount;
+    }
+
+    private index_tx(tx: Transaction, block_height: number) {
+        this.push_index_entry(tx.sender, { tx_id: tx.tx_id, block_height, role: "sent" });
+        this.push_index_entry(tx.recipient, { tx_id: tx.tx_id, block_height, role: "received" });
+    }
+
+    private push_index_entry(addr: PubKey, ref: AddrTxRef) {
+        if (!this.addr_tx_index.has(addr)) this.addr_tx_index.set(addr, []);
+        this.addr_tx_index.get(addr)!.push(ref);
+    }
+
+    private rebuild_index() {
+        this.addr_tx_index = new Map();
+        for (const block of this.chain) {
+            for (const tx of block.transactions) {
+                this.index_tx(tx, block.block_header.block_height);
+            }
+        }
+    }
+
+    get_txs_for_addr(addr: PubKey, limit = 50, offset = 0): AddrTxRef[] {
+        const refs = this.addr_tx_index.get(addr) || [];
+        return [...refs].reverse().slice(offset, offset + limit); // most recent first
+    }
+
+    get_tx_from_block(block_height: number, tx_id: string): Transaction | undefined {
+        return this.chain[block_height]?.transactions.find(tx => tx.tx_id === tx_id);
     }
 
     get_latest_block(): Block {
@@ -166,7 +216,7 @@ class BlockChain {
                 return tx;
             }
 
-            if(amount < 0) throw new Error("Invalid amount");
+            if(amount < 0 || amount > this.get_balance(sender)) throw new Error("Invalid amount");
 
             if (fee < this.calculate_dynamic_fee()) throw new Error("Fee not valid for current chain operation");
 
@@ -195,7 +245,6 @@ class BlockChain {
 
             const transactions = [...this.tx_pool];
             const block = new Block(block_height + 1, this.difficulty, block_hash, transactions);
-            this.tx_pool = [];
             return block;
         } catch (err) {
             throw new Error(`Unable to add a new block to the chain: ${err instanceof Error ? err.message : err}`);
@@ -218,6 +267,13 @@ class BlockChain {
 
             this.chain.push(new_block);
             this.difficulty = this.calc_difficulty();
+
+            for (const tx of new_block.transactions) {
+                this.index_tx(tx, new_block.block_header.block_height);
+            }
+
+            save_state(this.chain, this.addr_state, this.difficulty);
+            this.tx_pool = [];
             
             return new_block;
         } catch (err) {
@@ -258,7 +314,6 @@ class BlockChain {
         if (remote.length <= this.chain.length) return;
 
         BlockChain.is_valid_chain(remote);
-        this.addr_state.clear();
 
         for (const block of remote) {
             for (const tx of block.transactions) {
@@ -268,11 +323,13 @@ class BlockChain {
                 this.update_nonce(tx.sender);
                 this.credit_addr(tx.recipient, tx.amount);
             }
+            this.chain.push(block);
         }
 
-        this.chain = remote;
         this.difficulty = this.calc_difficulty();
         this.tx_pool = [];
+        this.rebuild_index();
+        save_state(this.chain, this.addr_state, this.difficulty);
     }
 }
 

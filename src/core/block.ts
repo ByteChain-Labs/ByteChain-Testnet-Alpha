@@ -32,9 +32,9 @@ class Block {
         `;
     }
 
-    set_block_props(): { n_nonce: number, hash: string } {
+    set_block_props(fixed_timestamp?: number): { n_nonce: number, hash: string } {
         try {
-            this.block_header.timestamp = Date.now();
+            this.block_header.timestamp = fixed_timestamp ?? Date.now();
             this.block_header.merkleroot = calc_merkleroot<Transaction>(this.transactions);
 
             const block_data_str = this.get_base_hash_input()
@@ -52,7 +52,7 @@ class Block {
 
     contain_valid_txs() {
         for (const tx of this.transactions) {
-            if (!tx.is_valid_tx()) {
+            if (!tx.verify_tx_sig()) {
                 throw new Error(`Invalid transaction at block ${this.block_header.block_height}`);
             }
         }

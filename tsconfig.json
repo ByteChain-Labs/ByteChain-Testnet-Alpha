@@ -32,6 +32,9 @@
     // "noFallthroughCasesInSwitch": true,
     // "noPropertyAccessFromIndexSignature": true,
 
+    "moduleResolution": "nodenext",
+    "esModuleInterop": true,
+
     // Recommended Options
     "strict": true,
     "verbatimModuleSyntax": true,
