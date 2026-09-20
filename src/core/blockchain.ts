@@ -1,31 +1,14 @@
-import fs from "fs";
 import type { PubKey } from "bc-web3js";
 import {
     BLOCK_REWARD, BLOCK_TIME_DIFF,
     MIN_DIFFICULTY, MAX_DIFFICULTY,
     BLOCK_WINDOW_DIFF, BLOCK_WINDOW_FEE,
-    GEN_PREV_HASH, BC_NAME,
+    BC_NAME, GEN_PREV_HASH, GENESIS_TIMESTAMP,
     VANITY_ADDR, print,
-    GENESIS_TIMESTAMP
 } from "../utils/constants.js";
 import { save_state, load_state } from "../utils/storage.js";
 import Transaction from "./transaction.js";
 import Block from "./block.js";
-
-
-
-
-function read_gen_file(): Block {
-    try {
-        const file_path = "genesis_block.json";
-        const genesis_block = fs.readFileSync(file_path, "utf-8");
-        const genesis_block_obj: Block = JSON.parse(genesis_block);
-
-        return genesis_block_obj;
-    } catch (err) {
-        throw new Error("Unable to read data from genesis_block.json");
-    }
-}
 
 
 // The state of an account after an account has interacted with the blockchain, 
@@ -67,30 +50,10 @@ class BlockChain {
     }
 
     genesis_block() {
-        const gen_block = read_gen_file();
+        const genesis_block = new Block(0, 4, GEN_PREV_HASH, []);
+        genesis_block.set_block_props(GENESIS_TIMESTAMP);
 
-        for (const transaction of gen_block.transactions) {
-            const tx = new Transaction(
-                transaction.amount,
-                BC_NAME,
-                transaction.recipient,
-                transaction.fee,
-                transaction.timestamp,
-                transaction.nonce,
-                ""
-            )
-
-            this.tx_pool.push(tx);
-            this.credit_addr(transaction.recipient, transaction.amount);
-        }
-        
-        const txs = this.tx_pool;
-        const new_block = new Block(0, MIN_DIFFICULTY, GEN_PREV_HASH, txs);
-        new_block.set_block_props(GENESIS_TIMESTAMP);
-
-        this.chain.push(new_block);
-        this.tx_pool = [];
-        this.difficulty = this.calc_difficulty();
+        return genesis_block;
     }
 
     ensure_account(addr: PubKey) {
@@ -303,33 +266,43 @@ class BlockChain {
         }
     }
 
-    static is_valid_chain(chain: Block[]): boolean {
-        for (const block of chain) {
-            block.contain_valid_txs();
+    public append_single_block(block: Block): boolean {
+        const latest = this.get_latest_block();
+
+        if (block.block_header.block_height !== latest.block_header.block_height + 1) return false;
+        if (block.block_header.previous_hash !== latest.block_header.block_hash) return false;
+
+        block.contain_valid_txs();
+
+        for (const tx of block.transactions) {
+            if (tx.sender !== BC_NAME) {
+                this.update_nonce(tx.sender);
+                this.debit_addr(tx.sender, tx.amount + tx.fee);
+            }
+            this.credit_addr(tx.recipient, tx.amount);
+            this.index_tx(tx, block.block_header.block_height);
         }
+
+        const mined_tx_ids = new Set(block.transactions.map(t => t.tx_id));
+
+        this.tx_pool = this.tx_pool.filter(t => !mined_tx_ids.has(t.tx_id));
+        this.chain.push(block);
+        this.difficulty = this.calc_difficulty();
+        save_state(this.chain, this.addr_state, this.difficulty);
         return true;
     }
 
-    sync_chain(remote: Block[]) {
-        if (remote.length <= this.chain.length) return;
+    public sync_chain(remote_blocks: Block[]): boolean {
+        if (!remote_blocks || remote_blocks.length === 0) return true;
 
-        BlockChain.is_valid_chain(remote);
-
-        for (const block of remote) {
-            for (const tx of block.transactions) {
-                if (tx.sender !== BC_NAME) {
-                    this.debit_addr(tx.sender, tx.amount + tx.fee);
-                }
-                this.update_nonce(tx.sender);
-                this.credit_addr(tx.recipient, tx.amount);
+        for (const block of remote_blocks) {
+            const success = this.append_single_block(block);
+            if (!success) {
+                print(`Sync error: Failed to apply block at height ${block.block_header.block_height}`);
+                return false;
             }
-            this.chain.push(block);
         }
-
-        this.difficulty = this.calc_difficulty();
-        this.tx_pool = [];
-        this.rebuild_index();
-        save_state(this.chain, this.addr_state, this.difficulty);
+        return true;
     }
 }
 

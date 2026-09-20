@@ -25,6 +25,7 @@ class P2PNode {
     MEMPOOL_SYNC_PROTOCOL = '/bytechain/mempool/0.0.1';
     CHAIN_SYNC_PROTOCOL = '/bytechain/sync/0.0.1';
     SYNC_BATCH_SIZE = 100;
+    public is_syncing: boolean = false;
     private syncing_peers = new Set<string>();
     private syncing_mempool_peers = new Set<string>();
 
@@ -49,9 +50,6 @@ class P2PNode {
                 bootstrap({
                     list: [
                         "/dns4/bytechain-bootstrap.onrender.com/tcp/443/wss/p2p/12D3KooWDFYeXNxPmKfbgs74q1xcnx16vprk4wvzrwgUEmppoVjX",
-                        // "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
-                        // "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-                        // "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt"
                     ]
                 })
             ],
@@ -195,15 +193,28 @@ class P2PNode {
                 case 'bytechain:blocks':
                     print("Received new block from peer");
                     try {
+                        if (this.is_syncing) {
+                            print("Node is currently syncing historical blocks; ignoring broadcast.");
+                            return;
+                        }
+
                         const received_block = deserialize_block(message);
                         const local_height = this.blockchain.get_latest_block().block_header.block_height;
                         const peer_height = received_block.block_header.block_height;
 
-                        if (peer_height > local_height) {
+                        if (peer_height === local_height + 1) {
+                            const success = this.blockchain.append_single_block(received_block);
+                            if (success) {
+                                print(`Successfully appended block at height ${peer_height}`);
+                            } else {
+                                print(`Hash mismatch for block ${peer_height}, initiating full sync...`);
+                                await this.sync_remote_chain(from_peer);
+                            }
+                        } else if (peer_height > local_height + 1) {
                             print(`Peer block height (${peer_height}) is ahead of local (${local_height}). Requesting sync...`);
                             await this.sync_remote_chain(from_peer);
                         } else {
-                            print(`Block at height ${peer_height} already known, ignoring.`);
+                            print(`Block at height ${peer_height} already known or outdated, ignoring.`);
                         }
                     } catch (error: any) {
                         console.error(`Processing Block Error: ${error.message}`);
@@ -235,8 +246,20 @@ class P2PNode {
 
     async sync_remote_chain(peerId: any) {
         const peer_str = peerId.toString();
+        const active_peers = this.node.getPeers().map((p: any) => p.toString());
+
+        if (!active_peers.includes(peer_str)) {
+            print(`Sync aborted: Peer ${peer_str} is no longer connected.`);
+            this.syncing_peers.delete(peer_str);
+            if (this.syncing_peers.size === 0) {
+                this.is_syncing = false;
+            }
+            return;
+        }
+
         if (this.syncing_peers.has(peer_str)) return;
         this.syncing_peers.add(peer_str);
+        this.is_syncing = true;
 
         let stream;
         
@@ -296,6 +319,9 @@ class P2PNode {
         } finally {
             if (stream) stream.close();
             this.syncing_peers.delete(peer_str);
+            if (this.syncing_peers.size === 0) {
+                this.is_syncing = false;
+            }
         }
     }
 

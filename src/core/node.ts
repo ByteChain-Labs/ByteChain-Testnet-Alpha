@@ -205,6 +205,12 @@ class BCNode {
     }
 
     pub_block() {
+        if (this.p2p.is_syncing) {
+            print("Node is currently syncing with network. Mining skipped.");
+            this.io?.emit("miningError", { message: "Node is syncing" });
+            return;
+        }
+
         try {
             const new_block = this.bytechain.mine_block(this.miner_addr);
             this.p2p.publish_block(new_block);
