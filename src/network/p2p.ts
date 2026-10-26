@@ -12,46 +12,58 @@ import { lpStream } from '@libp2p/utils';
 import BlockChain from '../core/blockchain.js';
 import Block from '../core/block.js';
 import Transaction from '../core/transaction.js';
-
-import { serialize_tx, deserialize_tx,
-    serialize_block, deserialize_block
+import {
+    serialize_tx, deserialize_tx,
+    serialize_block, deserialize_block,
 } from '../utils/serialization.js';
 import { print } from '../utils/constants.js';
 
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
 
 class P2PNode {
     node: any;
     blockchain: BlockChain;
-    MEMPOOL_SYNC_PROTOCOL = '/bytechain/mempool/0.0.1';
-    CHAIN_SYNC_PROTOCOL = '/bytechain/sync/0.0.1';
-    SYNC_BATCH_SIZE = 100;
-    public is_syncing: boolean = false;
+    readonly MEMPOOL_SYNC_PROTOCOL = '/bytechain/mempool/0.0.1';
+    readonly CHAIN_SYNC_PROTOCOL = '/bytechain/sync/0.0.1';
+    readonly SYNC_BATCH_SIZE = 32;
+    readonly SYNC_TIMEOUT_MS = 15_000;
+    public is_syncing = false;
+
     private syncing_peers = new Set<string>();
     private syncing_mempool_peers = new Set<string>();
+    private bytechain_peers = new Map<string, any>();
+    private sync_queue: Promise<void> = Promise.resolve();
+    private sync_timer: ReturnType<typeof setInterval> | undefined;
 
     constructor(blockchainInstance: BlockChain) {
         this.blockchain = blockchainInstance;
     }
 
     async start(port: number) {
+        const default_bootstrap = [
+            "/dns4/bytechain-bootstrap.onrender.com/tcp/443/wss/p2p/12D3KooWDFYeXNxPmKfbgs74q1xcnx16vprk4wvzrwgUEmppoVjX",
+        ];
+        const bootstrap_peers = (process.env.BYTECHAIN_BOOTSTRAP_PEERS ?? default_bootstrap.join(","))
+            .split(",")
+            .map(address => address.trim())
+            .filter(Boolean);
+        const announce_addresses = (process.env.BYTECHAIN_ANNOUNCE_ADDRESSES ?? "")
+            .split(",")
+            .map(address => address.trim())
+            .filter(Boolean);
+
         this.node = await createLibp2p({
             addresses: {
-                listen: [
-                    `/ip4/0.0.0.0/tcp/${port}/ws`,
-                ]
+                listen: [`/ip4/0.0.0.0/tcp/${port}/ws`],
+                ...(announce_addresses.length > 0 ? { announce: announce_addresses } : {}),
             },
-            transports: [
-                webSockets()
-            ],
+            transports: [webSockets()],
             connectionEncrypters: [noise()],
             streamMuxers: [yamux()],
             peerDiscovery: [
-                mdns({ interval: 20e3 }),
-                bootstrap({
-                    list: [
-                        "/dns4/bytechain-bootstrap.onrender.com/tcp/443/wss/p2p/12D3KooWDFYeXNxPmKfbgs74q1xcnx16vprk4wvzrwgUEmppoVjX",
-                    ]
-                })
+                mdns({ interval: 20_000 }),
+                bootstrap({ list: bootstrap_peers }),
             ],
             services: {
                 identify: identify(),
@@ -59,304 +71,389 @@ class P2PNode {
                 dht: kadDHT({ clientMode: false }),
                 pubsub: gossipsub({
                     allowPublishToZeroTopicPeers: true,
-                    D: 2, 
+                    D: 2,
                     Dlo: 1,
                     Dhi: 3,
-                })
-            }
+                }),
+            },
         });
 
-        this.node.addEventListener('peer:discovery', (evt: any) => {
-            const peer_id = evt.detail.id;
-
-            this.node.dial(peer_id)
-                .then(() => {
-                    print(`Successfully connected to ${peer_id.toString()}`);
-                })
+        this.node.addEventListener("peer:discovery", (evt: any) => {
+            const peerId = evt.detail.id;
+            this.node.dial(peerId, { signal: AbortSignal.timeout(10_000) })
+                .then(() => print(`Connected to discovered peer ${peerId.toString()}`))
                 .catch((err: any) => {
-                    console.error(
-                        `Failed to dial ${peer_id.toString()}:`,
-                        err
-                    );
+                    const message = err instanceof Error ? err.message : String(err);
+                    if (!message.toLowerCase().includes("already connected")) {
+                        print(`Could not dial discovered peer ${peerId.toString()}: ${message}`);
+                    }
                 });
         });
 
         await this.node.handle(this.MEMPOOL_SYNC_PROTOCOL, async (stream: any) => {
-            const lp = lpStream(stream);
-
             try {
-                const mempool_data = JSON.stringify(this.blockchain.tx_pool);
-                await lp.write(new TextEncoder().encode(mempool_data));
+                const lp = lpStream(stream);
+                const transactions = this.blockchain.tx_pool.slice(0, 1_000).map(serialize_tx);
+                await lp.write(encoder.encode(JSON.stringify({ transactions })), {
+                    signal: AbortSignal.timeout(this.SYNC_TIMEOUT_MS),
+                });
             } catch (err: any) {
-                console.error(`Error sharing mempool: ${err instanceof Error ? err.message : err}`);
+                print(`Error sharing mempool: ${err instanceof Error ? err.message : String(err)}`);
             } finally {
-                stream.close();
+                try { await stream.close(); } catch { }
             }
-            print("Shared mempool with a peer.");
         });
 
         await this.node.handle(this.CHAIN_SYNC_PROTOCOL, async (stream: any) => {
             const lp = lpStream(stream);
-            
             try {
                 while (true) {
-                    const data = await lp.read();
+                    const data = await lp.read({ signal: AbortSignal.timeout(60_000) });
                     if (!data) break;
-                    const request = JSON.parse(new TextDecoder().decode(data.subarray()));
-                    const height = this.blockchain.get_latest_block().block_header.block_height;
-                    if (request.type === 'GET_HEIGHT') {
-                        await lp.write(new TextEncoder().encode(JSON.stringify({ height })));
-                    } else if (request.type === 'GET_BLOCKS') {
-                        const chain_len = height + 1;
-                        const to = Math.min(request.toHeight ?? chain_len, chain_len);
-                        const blocks_to_send = this.blockchain.get_multiple_blocks(request.fromHeight, to);
-                        const serialized_blocks = blocks_to_send.map(b => serialize_block(b));
 
-
-                        await lp.write(
-                            new TextEncoder().encode(JSON.stringify({ blocks: serialized_blocks })),
-                            { signal: AbortSignal.timeout(15_000) }
-                        );
+                    let request: any;
+                    try {
+                        request = JSON.parse(decoder.decode(data.subarray()));
+                    } catch {
+                        await lp.write(encoder.encode(JSON.stringify({ error: "Malformed JSON request" })));
+                        continue;
                     }
+
+                    let response: any;
+                    try {
+                        switch (request.type) {
+                            case "GET_HEIGHT": {
+                                const latest = this.blockchain.get_latest_block();
+                                response = {
+                                    height: latest.block_header.block_height,
+                                    headHash: latest.block_header.block_hash,
+                                };
+                                break;
+                            }
+                            case "GET_BLOCK_HASH": {
+                                const height = request.height;
+                                if (!Number.isSafeInteger(height) || height < 0 || height >= this.blockchain.chain.length) {
+                                    throw new Error("Requested block height is out of range");
+                                }
+                                response = {
+                                    height,
+                                    hash: this.blockchain.chain[height].block_header.block_hash,
+                                };
+                                break;
+                            }
+                            case "GET_BLOCKS": {
+                                const from_height = request.from_height;
+                                const requested_to = request.to_height;
+                                if (
+                                    !Number.isSafeInteger(from_height) || from_height < 0 ||
+                                    !Number.isSafeInteger(requested_to) || requested_to < from_height
+                                ) {
+                                    throw new Error("Invalid block range");
+                                }
+
+                                const chainLength = this.blockchain.chain.length;
+                                const to_height = Math.min(requested_to, from_height + this.SYNC_BATCH_SIZE, chainLength);
+                                const blocks = this.blockchain.get_multiple_blocks(from_height, to_height);
+                                response = { blocks: blocks.map(serialize_block) };
+                                break;
+                            }
+                            default:
+                                throw new Error("Unsupported chain-sync request type");
+                        }
+                    } catch (err: any) {
+                        response = { error: err instanceof Error ? err.message : String(err) };
+                    }
+
+                    await lp.write(encoder.encode(JSON.stringify(response)), {
+                        signal: AbortSignal.timeout(this.SYNC_TIMEOUT_MS),
+                    });
                 }
             } catch (err: any) {
-                const msg = err instanceof Error ? err.message : String(err);
-                if (!msg.includes('Unexpected EOF')) {
-                console.error(`Error syncing chain: ${msg}`);
-    }
+                const message = err instanceof Error ? err.message : String(err);
+                if (!message.includes("Unexpected EOF") && !message.includes("aborted")) {
+                    print(`Chain-sync stream closed: ${message}`);
+                }
             } finally {
-                stream.close();
+                try { await stream.close(); } catch { }
             }
         });
 
-        this.node.addEventListener('peer:connect', async (evt: any) => {
-            evt.detail;
+        this.node.addEventListener("peer:identify", async (evt: any) => {
+            const detail = evt.detail ?? {};
+            const peerId = detail.peerId;
+            const protocols: string[] = Array.isArray(detail.protocols) ? detail.protocols : [];
+            if (!peerId || !protocols.includes(this.CHAIN_SYNC_PROTOCOL)) return;
+
+            const peer_key = peerId.toString();
+            this.bytechain_peers.set(peer_key, peerId);
+            print(`ByteChain peer identified: ${peer_key}`);
+
+            await this.sync_remote_chain(peerId);
+            await this.request_mempool(peerId);
         });
 
-        this.node.addEventListener('peer:identify', async (evt: any) => {
-            const { peerId, protocols } = evt.detail;
-            const is_bytechain_peer = protocols.includes(this.CHAIN_SYNC_PROTOCOL);
-            
-            if (is_bytechain_peer) {
-                print(`ByteChain peer identified: ${peerId.toString()}`);
-                await this.sync_remote_chain(peerId);
-                await this.request_mempool(peerId);
+        this.node.addEventListener("peer:disconnect", (evt: any) => {
+            const detail = evt.detail ?? {};
+            const peerId = detail.remotePeer ?? detail.peerId;
+            if (peerId) {
+                const key = peerId.toString();
+                this.bytechain_peers.delete(key);
+                this.syncing_peers.delete(key);
+                this.syncing_mempool_peers.delete(key);
             }
-        });
-
-        this.node.addEventListener('peer:disconnect', (evt: any) => {
-            evt.detail;
         });
 
         await this.node.start();
         print(`ByteChain P2P Node started with peer ID: ${this.node.peerId.toString()}`);
         await this.subscribe_to_topics();
+
+        this.sync_timer = setInterval(() => {
+            for (const peerId of this.bytechain_peers.values()) {
+                void this.sync_remote_chain(peerId).catch((err: any) => {
+                    print(`Periodic sync failed: ${err instanceof Error ? err.message : String(err)}`);
+                });
+            }
+        }, 30_000);
     }
 
     async stop() {
-        await this.node.stop();
-        print('P2P Node stopped');
+        if (this.sync_timer) clearInterval(this.sync_timer);
+        this.sync_timer = undefined;
+        this.bytechain_peers.clear();
+        if (this.node) await this.node.stop();
+        print("P2P Node stopped");
     }
 
     async subscribe_to_topics() {
-        this.node.services.pubsub.subscribe('bytechain:transactions');
-        this.node.services.pubsub.subscribe('bytechain:blocks');
+        this.node.services.pubsub.subscribe("bytechain:transactions");
+        this.node.services.pubsub.subscribe("bytechain:blocks");
 
-        this.node.services.pubsub.addEventListener('message', async (evt: any) => {
-            if (evt.detail.from.toString() === this.node.peerId.toString()) return;
+        this.node.services.pubsub.addEventListener("message", async (evt: any) => {
+            const detail = evt.detail ?? {};
+            if (detail.from?.toString() === this.node.peerId.toString()) return;
 
-            const { topic, data, from: from_peer } = evt.detail;
-            const message_string = new TextDecoder().decode(data);
+            const { topic, data, from: fromPeer } = detail;
             let message: any;
-
             try {
-                message = JSON.parse(message_string);
-            } catch (error) {
-                console.error('Error parsing JSON message:', error);
+                message = JSON.parse(decoder.decode(data));
+            } catch (err) {
+                print(`Rejected malformed pubsub message: ${err instanceof Error ? err.message : String(err)}`);
                 return;
             }
 
             switch (topic) {
-                case 'bytechain:transactions':
-                    print(`Received new transaction from peer on topic ${topic}`);
+                case "bytechain:transactions": {
                     try {
-                        const received_tx = deserialize_tx(message);
-
-                        if (!this.blockchain.tx_pool.find((tx: any) => tx.tx_id === received_tx.tx_id)) {
-                            const add_result = this.blockchain.add_new_tx(received_tx);
-                            if(add_result) print("Transaction added to pool");
-                        }
-                    } catch (error: any) {
-                        console.error('Processing Tx Error:', error.message);
+                        const tx = deserialize_tx(message);
+                        if (this.is_transaction_known(tx.tx_id)) return;
+                        this.blockchain.add_new_tx(tx);
+                        print(`Accepted transaction ${tx.tx_id} from the network`);
+                    } catch (err: any) {
+                        print(`Rejected network transaction: ${err instanceof Error ? err.message : String(err)}`);
                     }
                     break;
-                case 'bytechain:blocks':
-                    print("Received new block from peer");
+                }
+                case "bytechain:blocks": {
+                    if (this.is_syncing) {
+                        print("Ignoring block gossip during historical sync; the sync loop will re-check the peer height.");
+                        return;
+                    }
                     try {
-                        if (this.is_syncing) {
-                            print("Node is currently syncing historical blocks; ignoring broadcast.");
+                        const block = deserialize_block(message);
+                        const local_height = this.blockchain.get_latest_block().block_header.block_height;
+                        const peer_height = block.block_header.block_height;
+
+                        if (peer_height === local_height + 1 && this.blockchain.append_single_block(block)) {
+                            print(`Accepted block ${peer_height}`);
                             return;
                         }
 
-                        const received_block = deserialize_block(message);
-                        const local_height = this.blockchain.get_latest_block().block_header.block_height;
-                        const peer_height = received_block.block_header.block_height;
-
-                        if (peer_height === local_height + 1) {
-                            const success = this.blockchain.append_single_block(received_block);
-                            if (success) {
-                                print(`Successfully appended block at height ${peer_height}`);
-                            } else {
-                                print(`Hash mismatch for block ${peer_height}, initiating full sync...`);
-                                await this.sync_remote_chain(from_peer);
-                            }
-                        } else if (peer_height > local_height + 1) {
-                            print(`Peer block height (${peer_height}) is ahead of local (${local_height}). Requesting sync...`);
-                            await this.sync_remote_chain(from_peer);
+                        if (peer_height > local_height || peer_height === local_height + 1) {
+                            if (fromPeer) await this.sync_remote_chain(fromPeer);
                         } else {
-                            print(`Block at height ${peer_height} already known or outdated, ignoring.`);
+                            print(`Ignoring outdated block at height ${peer_height}`);
                         }
-                    } catch (error: any) {
-                        console.error(`Processing Block Error: ${error.message}`);
+                    } catch (err: any) {
+                        print(`Rejected network block: ${err instanceof Error ? err.message : String(err)}`);
+                        if (fromPeer) await this.sync_remote_chain(fromPeer);
                     }
                     break;
+                }
                 default:
                     print(`Received message on unknown topic ${topic}`);
             }
         });
     }
 
+    private is_transaction_known(txId: string): boolean {
+        if (this.blockchain.tx_pool.some(tx => tx.tx_id === txId)) return true;
+        return this.blockchain.chain.some(block => block.transactions.some(tx => tx.tx_id === txId));
+    }
+
     async publish_tx(tx: Transaction) {
-        if (this.node.getPeers().length === 0) {
-            print("Warning: No peers connected. Transaction will not propagate.");
-        }
-        
-        const serialized_tx = serialize_tx(tx);
-        const json_string = JSON.stringify(serialized_tx);
-        await this.node.services.pubsub.publish('bytechain:transactions', new TextEncoder().encode(json_string));
+        const serialized = JSON.stringify(serialize_tx(tx));
+        await this.node.services.pubsub.publish("bytechain:transactions", encoder.encode(serialized));
         print(`Published transaction: ${tx.tx_id}`);
     }
 
     async publish_block(block: Block) {
-        const serialized_block = serialize_block(block);
-        const json_string = JSON.stringify(serialized_block);
-        await this.node.services.pubsub.publish('bytechain:blocks', new TextEncoder().encode(json_string));
-        print(`New block published: Height: ${block.block_header.block_height}, Hash: ${block.block_header.block_hash}, tx count: ${block.transactions.length}`);
+        const serialized = JSON.stringify(serialize_block(block));
+        await this.node.services.pubsub.publish("bytechain:blocks", encoder.encode(serialized));
+        print(`Published block ${block.block_header.block_height} (${block.transactions.length} transactions)`);
     }
 
-    async sync_remote_chain(peerId: any) {
-        const peer_str = peerId.toString();
-        const active_peers = this.node.getPeers().map((p: any) => p.toString());
+    async sync_remote_chain(peerId: any): Promise<void> {
+        const task = this.sync_queue.then(() => this.perform_sync_remote_chain(peerId));
+        this.sync_queue = task.catch(() => undefined);
+        return task;
+    }
 
-        if (!active_peers.includes(peer_str)) {
-            print(`Sync aborted: Peer ${peer_str} is no longer connected.`);
-            this.syncing_peers.delete(peer_str);
-            if (this.syncing_peers.size === 0) {
-                this.is_syncing = false;
-            }
+    private async perform_sync_remote_chain(peerId: any): Promise<void> {
+        const peer_key = peerId.toString();
+        const active_peers = this.node.getPeers().map((peer: any) => peer.toString());
+        if (!active_peers.includes(peer_key)) {
+            print(`Sync skipped: peer ${peer_key} is no longer connected`);
             return;
         }
+        if (this.syncing_peers.has(peer_key)) return;
 
-        if (this.syncing_peers.has(peer_str)) return;
-        this.syncing_peers.add(peer_str);
+        this.syncing_peers.add(peer_key);
         this.is_syncing = true;
+        let stream: any;
 
-        let stream;
-        
         try {
             stream = await this.node.dialProtocol(peerId, this.CHAIN_SYNC_PROTOCOL, {
-                signal: AbortSignal.timeout(10_000)
+                signal: AbortSignal.timeout(10_000),
             });
             const lp = lpStream(stream);
 
-            await lp.write(
-                new TextEncoder().encode(JSON.stringify({ type: 'GET_HEIGHT' })),
-                { signal: AbortSignal.timeout(10_000) }
-            );
-            const height_result = await lp.read({ signal: AbortSignal.timeout(10_000) });
-            const { height: remote_height } = JSON.parse(new TextDecoder().decode(height_result.subarray()));
+            const exchange = async (request: Record<string, unknown>, timeout = this.SYNC_TIMEOUT_MS): Promise<any> => {
+                await lp.write(encoder.encode(JSON.stringify(request)), {
+                    signal: AbortSignal.timeout(timeout),
+                });
+                const response_bytes = await lp.read({ signal: AbortSignal.timeout(timeout) });
+                if (!response_bytes) throw new Error("Peer closed the sync stream without responding");
+                const response = JSON.parse(decoder.decode(response_bytes.subarray()));
+                if (response?.error) throw new Error(`Peer rejected sync request: ${response.error}`);
+                return response;
+            };
 
-            const local_height = this.blockchain.get_latest_block().block_header.block_height;
-
-            if (remote_height <= local_height) {
-                print("Chain is already up to date.");
-                return;
-            }
-
-            print(`Peer is ahead (${remote_height} > ${local_height}). Requesting blocks in batches...`);
-
-            const received_blocks: Block[] = [];
-            let cursor = local_height + 1;
-
-            while (cursor <= remote_height) {
-                const to = Math.min(cursor + this.SYNC_BATCH_SIZE, remote_height + 1);
-
-                await lp.write(
-                    new TextEncoder().encode(JSON.stringify({ type: 'GET_BLOCKS', fromHeight: cursor, toHeight: to })),
-                    { signal: AbortSignal.timeout(15_000) }
-                );
-
-                const blocks_result = await lp.read({ signal: AbortSignal.timeout(15_000) });
-                if (!blocks_result) break;
-
-                const { blocks } = JSON.parse(new TextDecoder().decode(blocks_result.subarray()));
-                if (!blocks || blocks.length === 0) break;
-
-                for (const blockData of blocks) {
-                    received_blocks.push(deserialize_block(blockData));
+            for (let round = 0; round < 16; round++) {
+                const status = await exchange({ type: "GET_HEIGHT" });
+                const remote_height = status.height;
+                if (!Number.isSafeInteger(remote_height) || remote_height < 0) {
+                    throw new Error("Peer returned an invalid chain height");
                 }
 
-                print(`Fetched blocks ${cursor}-${to - 1} (${received_blocks.length} total so far)`);
-                cursor = to;
+                const local_height = this.blockchain.get_latest_block().block_header.block_height;
+                const local_head_hash = this.blockchain.get_latest_block().block_header.block_hash;
+
+                if (remote_height <= local_height) {
+                    if (remote_height === local_height && status.headHash !== local_head_hash) {
+                        print(`Peer ${peer_key} has a different chain at the same height; keeping the local chain on a tie`);
+                    } else {
+                        print(`Chain is up to date with ${peer_key}`);
+                    }
+                    return;
+                }
+
+                let low = 0;
+                let high = Math.min(local_height, remote_height);
+                let common_height = -1;
+                while (low <= high) {
+                    const middle = Math.floor((low + high) / 2);
+                    const remoteHash = await exchange({ type: "GET_BLOCK_HASH", height: middle });
+                    const localHash = this.blockchain.chain[middle]?.block_header.block_hash;
+                    if (remoteHash.hash === localHash) {
+                        common_height = middle;
+                        low = middle + 1;
+                    } else {
+                        high = middle - 1;
+                    }
+                }
+                if (common_height < 0) throw new Error("Peer is on a different network: no common genesis block");
+
+                print(`Syncing from shared ancestor ${common_height}; peer height is ${remote_height}`);
+                const received_blocks: Block[] = [];
+                let cursor = common_height + 1;
+
+                while (cursor <= remote_height) {
+                    const to_height = Math.min(cursor + this.SYNC_BATCH_SIZE, remote_height + 1);
+                    const response = await exchange({ type: "GET_BLOCKS", from_height: cursor, to_height });
+                    if (!Array.isArray(response.blocks)) throw new Error("Peer returned an invalid block batch");
+
+                    const expected_count = to_height - cursor;
+                    if (response.blocks.length !== expected_count) {
+                        throw new Error(`Incomplete block batch: expected ${expected_count}, received ${response.blocks.length}`);
+                    }
+
+                    const batch = response.blocks.map((data: any) => deserialize_block(data));
+                    for (let i = 0; i < batch.length; i++) {
+                        const expected_height = cursor + i;
+                        if (batch[i].block_header.block_height !== expected_height) {
+                            throw new Error(`Peer returned block ${batch[i].block_header.block_height} where height ${expected_height} was expected`);
+                        }
+                    }
+                    received_blocks.push(...batch);
+                    cursor += batch.length;
+                    print(`Fetched through block ${cursor - 1} (${received_blocks.length} block(s) in this sync)`);
+                }
+
+                const replaced = this.blockchain.replace_chain_from(common_height, received_blocks);
+                if (!replaced) {
+                    const now_height = this.blockchain.get_latest_block().block_header.block_height;
+                    if (now_height >= remote_height) return;
+                    throw new Error("Downloaded chain was not applied");
+                }
+                print(`Chain sync applied ${received_blocks.length} block(s).`);
             }
 
-            if (received_blocks.length > 0) {
-                this.blockchain.sync_chain(received_blocks);
-                print(`Successfully synced ${received_blocks.length} blocks.`);
-            }
+            print(`Sync with ${peer_key} stopped after repeated catch-up rounds; the next retry will continue it`);
         } catch (err: any) {
-            console.error(`Chain Sync failed with ${peerId.toString()}:`, err.message);
+            print(`Chain sync failed with ${peer_key}: ${err instanceof Error ? err.message : String(err)}`);
         } finally {
-            if (stream) stream.close();
-            this.syncing_peers.delete(peer_str);
-            if (this.syncing_peers.size === 0) {
-                this.is_syncing = false;
+            if (stream) {
+                try { await stream.close(); } catch { /* stream may already be closed */ }
             }
+            this.syncing_peers.delete(peer_key);
+            this.is_syncing = this.syncing_peers.size > 0;
         }
     }
 
     async request_mempool(peerId: any) {
-        const peer_str = peerId.toString();
-        if (this.syncing_mempool_peers.has(peer_str)) return;
-        this.syncing_mempool_peers.add(peer_str);
+        const peer_key = peerId.toString();
+        if (this.syncing_mempool_peers.has(peer_key)) return;
+        this.syncing_mempool_peers.add(peer_key);
 
-        let stream;
+        let stream: any;
         try {
-            const dialResult = await this.node.dialProtocol(peerId, this.MEMPOOL_SYNC_PROTOCOL);
-
-            stream = dialResult.stream || dialResult;
-            
+            const dial_result = await this.node.dialProtocol(peerId, this.MEMPOOL_SYNC_PROTOCOL, {
+                signal: AbortSignal.timeout(10_000),
+            });
+            stream = dial_result.stream || dial_result;
             const lp = lpStream(stream);
-            const response = await lp.read();
+            const response = await lp.read({ signal: AbortSignal.timeout(this.SYNC_TIMEOUT_MS) });
+            if (!response) return;
 
-            if (response) {
-                const mempoolString = new TextDecoder().decode(response.subarray());
-                const remoteMempool = JSON.parse(mempoolString);
-                
-                print(`Received ${remoteMempool.length} transactions from peer.`);
-                
-                remoteMempool.forEach((txData: any) => {
+            const payload = JSON.parse(decoder.decode(response.subarray()));
+            if (!Array.isArray(payload.transactions)) throw new Error("Peer returned an invalid mempool payload");
+            print(`Received ${payload.transactions.length} pending transaction(s) from ${peer_key}`);
+
+            for (const txData of payload.transactions) {
+                try {
                     const tx = deserialize_tx(txData);
-                    if (!this.blockchain.tx_pool.find(t => t.tx_id === tx.tx_id)) {
-                        this.blockchain.add_new_tx(tx);
-                    }
-                });
+                    if (!this.is_transaction_known(tx.tx_id)) this.blockchain.add_new_tx(tx);
+                } catch (err: any) {
+                    print(`Skipped mempool transaction: ${err instanceof Error ? err.message : String(err)}`);
+                }
             }
         } catch (err: any) {
-            console.error(`Mempool sync failed:`, err.message);
+            print(`Mempool sync failed with ${peer_key}: ${err instanceof Error ? err.message : String(err)}`);
         } finally {
-            if (stream) stream.close();
-            this.syncing_mempool_peers.delete(peer_str);
+            if (stream) {
+                try { await stream.close(); } catch { /* stream may already be closed */ }
+            }
+            this.syncing_mempool_peers.delete(peer_key);
         }
     }
 }

@@ -5,7 +5,7 @@ function convert_tostr<T>(data: T): string {
 }
 
 function calc_merkleroot<T>(data_arr: T[]): string {
-    if (data_arr.length === 0) return hash_tostr(convert_tostr(Date.now()));
+    if (data_arr.length === 0) return hash_tostr("ByteChain: empty-merkle-root");
 
     let hashed_dataarr = data_arr.map(data => hash_tostr(convert_tostr(data)));
 
