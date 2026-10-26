@@ -73,7 +73,11 @@ class BCNode {
                 const tx_result = this.bytechain.add_new_tx(new_tx);
 
                 if (tx_result) {
-                    this.p2p.publish_tx(new_tx);
+                    try {
+                        await this.p2p.publish_tx(new_tx);
+                    } catch (publishError) {
+                        print(`Transaction accepted locally but publish failed: ${publishError instanceof Error ? publishError.message : String(publishError)}`);
+                    }
                     return res.status(201).json({ status: "success", tx_id: new_tx.tx_id });
                 }
 
@@ -205,9 +209,17 @@ class BCNode {
     }
 
     pub_block() {
+        if (this.p2p.is_syncing) {
+            print("Node is currently syncing with network. Mining skipped.");
+            this.io?.emit("miningError", { message: "Node is syncing" });
+            return;
+        }
+
         try {
             const new_block = this.bytechain.mine_block(this.miner_addr);
-            this.p2p.publish_block(new_block);
+            void this.p2p.publish_block(new_block).catch((publishError: any) => {
+                print(`Block mined locally but publish failed: ${publishError instanceof Error ? publishError.message : String(publishError)}`);
+            });
             this.io?.emit("blockMined", new_block);
         } catch (err: any) {
             const msg = err instanceof Error ? err.message : String(err);

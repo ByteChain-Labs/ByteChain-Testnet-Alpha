@@ -3,7 +3,7 @@ import path from "path";
 import Block from "../core/block.js";
 import Transaction from "../core/transaction.js";
 
-const DATA_DIR = "data2";
+const DATA_DIR = "data";
 const CHAIN_FILE = path.join(DATA_DIR, "chain.json");
 const CHAIN_TMP_FILE = path.join(DATA_DIR, "chain.json.tmp");
 
